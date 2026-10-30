@@ -1,0 +1,22 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Extract structured chemical reaction data from literature PDFs.">
+    <title>{% block title %}ReactXtract{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=20261030.2">
+</head>
+<body>
+    {% include 'components/navbar.html' %}
+    {% if messages %}
+    <div class="toast-stack" aria-live="polite">
+        {% for message in messages %}<div class="toast toast--{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+    <script src="{% static 'js/app.js' %}?v=20261030.1"></script>
+</body>
+</html>
+

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load reactxtract %}
+{% block title %}New extraction | ReactXtract{% endblock %}
+{% block content %}
+<main>
+    <section class="workspace shell">
+        <form class="upload-card" action="{% url 'extract_documents' %}" method="post" enctype="multipart/form-data" id="extraction-form">
+            {% csrf_token %}
+            <div class="section-heading">
+                <span class="step">01</span>
+                <div><h2>Add source documents</h2><p>PDF articles and supporting information, up to 250 MB each. Each PDF is first converted to a page-aware text file used for keyword selection and AI chunking.</p></div>
+            </div>
+            <label class="field-label" for="title">Literature set title <span>Optional</span></label>
+            <input class="text-input" id="title" name="title" type="text" maxlength="255" placeholder="e.g. Nickel-catalyzed cross-coupling study">
+            <label class="drop-zone" id="drop-zone" for="documents">
+                <input id="documents" name="documents" type="file" accept="application/pdf,.pdf" multiple required>
+                <span class="drop-zone__icon" aria-hidden="true">⇧</span>
+                <strong>Drop PDFs here or browse</strong>
+                <small>Select the main article and all relevant supporting files together.</small>
+            </label>
+            <div class="file-list" id="file-list" aria-live="polite"></div>
+            <div class="pipeline">
+                <div><b>1</b><span>Keyword page selection</span></div><i></i>
+                <div><b>2</b><span>Hybrid AI extraction</span></div><i></i>
+                <div><b>3</b><span>Review &amp; export</span></div>
+            </div>
+            <button class="button button--primary button--wide" type="submit" id="extract-button" disabled>
+                <span>Extract reaction data</span><span aria-hidden="true">→</span>
+            </button>
+            <p class="form-note">PyMuPDF saves column-aware text and detected tables first; only pages needing visual interpretation are also attached for AI vision.</p>
+        </form>
+
+        <aside class="requirements-card">
+            <div class="section-heading">
+                <span class="step step--orange">02</span>
+                <div><h2>Extraction contract</h2><p>Fields generated for every distinct reaction.</p></div>
+            </div>
+            <ol class="field-map">
+                <li><span>01</span>Products</li><li><span>02</span>Starting materials</li>
+                <li><span>03</span>Reagents</li><li><span>04</span>Catalysts</li>
+                <li><span>05</span>Solvents</li><li><span>06</span>Reaction time</li>
+                <li><span>07</span>Reaction pressure</li><li><span>08</span>Reaction temperature</li>
+                <li><span>09</span>Other conditions</li><li><span>10</span>Number of stages</li>
+                <li><span>11</span>Description type</li><li><span>12</span>Yield</li>
+            </ol>
+            <div class="notice"><strong>Evidence first.</strong> Missing information is left blank. Reaction work-up and purification are not counted as stages.</div>
+        </aside>
+    </section>
+
+    {% if recent_jobs %}
+    <section class="recent shell">
+        <div class="section-heading section-heading--row"><div><div class="eyebrow">RECENT WORK</div><h2>Saved extraction jobs</h2></div><a href="{% url 'records' %}">View all records →</a></div>
+        <div class="job-grid">
+            {% for job in recent_jobs %}
+            <a class="job-card" href="{% url 'job_detail' job.id %}">
+                <div><span class="status status--{{ job.status }}">{{ job.get_status_display }}</span><time>{{ job.created_at|date:'M j, Y · g:i A' }}</time></div>
+                <h3>{{ job.title }}</h3>
+                <p>{{ job.reaction_count }} reaction{{ job.reaction_count|pluralize }} · {{ job.total_tokens }} tokens · ${{ job.estimated_cost_usd }} · {{ job.processing_duration_ms|duration_ms }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+</main>
+
+<div class="processing-overlay" id="processing-overlay" hidden>
+    <div class="processing-card" role="status" aria-live="assertive">
+        <div class="spinner"></div><div class="eyebrow">EXTRACTION IN PROGRESS</div>
+        <h2>Reading the literature</h2>
+        <p>ReactXtract is selecting relevant pages, reconstructing native text and tables, analyzing visual pages, and consolidating reaction records.</p>
+        <strong class="processing-elapsed" id="processing-elapsed">Elapsed 00:00</strong>
+        <div class="progress-track"><span></span></div>
+        <small>Keep this page open until processing finishes.</small>
+    </div>
+</div>
+{% endblock %}
+

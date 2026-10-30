@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="Windows-1252" standalone="yes"?>
+<Lookup type="T_SOLV">
+ <Item code="1" name="1,1,1-trichloroethane" synonyms="trichloro-ethane, 1,1,1-" priority="0" status="V" />
+ <Item code="2" name="1,1,2,2-tetrachloro-1,2-difluoroethane" synonyms="freon 112; tetrachloro-1,2-difluoroethane, 1,1,2,2-" priority="0" status="V" />
+ <Item code="3" name="1,1,2,2-tetrachloroethane" synonyms="tetrachloroethane, 1,1,2,2-" priority="0" status="V" />
+ <Item code="4" name="1,1,2-trichloro-1,2,2-trifluoroethane" synonyms="freon 113; trichlorotrifluoroethane, 1,1,2-" priority="0" status="V" />
+ <Item code="5" name="1,1,2-trichloroethane" synonyms="trichloro-ethane, 1,1,2-" priority="0" status="V" />
+ <Item code="6" name="1,1,2-trichloroethane-d3" synonyms="trichloroethane-d3, 1,1,2-" priority="0" status="V" />
+ <Item code="7" name="1,1-diethoxyethane" synonyms="diethoxyethane, 1,1-" priority="0" status="V" />
+ <Item code="8" name="1,2,3,4-tetrahydronaphthalene" synonyms="tetrahydronaphthalene, 1,2,3,4-; tetraline" priority="0" status="V" />
+ <Item code="9" name="1,2-diaminoethane" synonyms="diaminoethane, 1,2-" priority="0" status="V" />
+ <Item code="10" name="1,2-dibromoethane" synonyms="dibromoethane, 1,2-" priority="0" status="V" />
+ <Item code="11" name="1,2-dichlorobenzene" synonyms="dichlorobenzene, 1,2-; o-dichlorobenzene" priority="0" status="V" />
+ <Item code="12" name="1,2-dichloroethane" synonyms="ethylene dichloride, 1,2-" priority="0" status="V" />
+ <Item code="13" name="1,2-diethoxyethane" synonyms="diethoxyethane, 1,2-" priority="0" status="V" />
+ <Item code="14" name="1,2-dimethoxyethane" synonyms="dimethoxyethane, 1,2-; DME; ethylene glycol dimethyl ether; monoglyme" priority="0" status="V" />
+ <Item code="15" name="1,2-dimethylcyclohexane" synonyms="dimethylcyclohexane, 1,2-" priority="0" status="V" />
+ <Item code="16" name="1,3,5-trimethylbenzene" synonyms="mesitylene; trimethylbenzene, 1,3,5-" priority="0" status="V" />
+ <Item code="17" name="1,3-dimethylcyclohexane" synonyms="dimethylcyclohexane, 1,3-" priority="0" status="V" />
+ <Item code="18" name="1,3-dioxane" synonyms="dioxane, 1,3-" priority="0" status="V" />
+ <Item code="19" name="1,4-dimethylcyclohexane" synonyms="dimethylcyclohexane, 1,4-" priority="0" status="V" />
+ <Item code="20" name="1,4-dioxane" synonyms="dioxane, 1,4-" priority="0" status="V" />
+ <Item code="21" name="1-methylnaphthalene" synonyms="methylnaphthalene, 1-" priority="0" status="V" />
+ <Item code="22" name="1-methylpyrrolidin-2-one" synonyms="methylpyrrolidin-2-one, 1-; NMP; N-methyl-2-pyrrolidone" priority="0" status="V" />
+ <Item code="23" name="2,2,2-trifluoroethanol" synonyms="trifluoroethanol, 2,2,2-" priority="0" status="V" />
+ <Item code="24" name="2,2,4-trimethylpentane" synonyms="isooctane; trimethylpentane, 2,2,4-" priority="0" status="V" />
+ <Item code="25" name="2,3,4-trimethylpyridine" synonyms="trimethylpyridine, 2,3,4-" priority="0" status="V" />
+ <Item code="26" name="2,3-butanedione dioxime" synonyms="butanedione-(E,E)-dioxime; dimethylglyoxime" priority="0" status="V" /> 
+ <Item code="27" name="2,4,6-trimethylpyridine" synonyms="collidine; trimethylpyridine, 2,4,6-" priority="0" status="V" />
+ <Item code="28" name="2-aminoethanol" synonyms="amino-ethanol, 2-" priority="0" status="V" />
+ <Item code="29" name="2-ethoxyethanol" synonyms="cellosolve; ethoxy-ethanol, 2-" priority="0" status="V" />
+ <Item code="30" name="2-methoxyethanol" synonyms="methoxyethanol, 2-; methylcellosolve; ethylene glycol monomethyl ether" priority="0" status="V" />
+ <Item code="31" name="2-methylbenzonitrile" synonyms="methylbenzonitrile, 2-" priority="0" status="V" />
+ <Item code="32" name="2-methylbutan-2-ol" synonyms="methylbutan-2-ol, 2-; t-amyl alcohol; t-pentyl alcohol" priority="0" status="V" />
+ <Item code="33" name="2-methylbutane" synonyms="methylbutane, 2-" priority="0" status="V" />
+ <Item code="34" name="2-methyltetrahydrofuran" synonyms="methyltetrahydrofuran, 2-" priority="0" status="V" />
+ <Item code="35" name="3-methylbutan-1-ol" synonyms="methyl-butan-1-ol, 3-" priority="0" status="V" />
+ <Item code="36" name="3-methyltetrahydrothiophene" synonyms="methyltetrahydrothiophene, 3-" priority="0" status="V" />
+ <Item code="37" name="acetic acid" synonyms="CH3COOH" priority="0" status="V" />
+ <Item code="38" name="acetic acid-d4" priority="0" status="V" />
+ <Item code="39" name="acetic anhydride" synonyms="acetic acid anhydride" priority="0" status="V" />
+ <Item code="40" name="acetone" synonyms="dimethyl ketone" priority="0" status="V" />
+ <Item code="41" name="acetone-d6" synonyms="dimethyl ketone-d6" priority="0" status="V" />
+ <Item code="42" name="acetonitrile" priority="0" status="V" />
+ <Item code="43" name="acetonitrile-d3" priority="0" status="V" />
+ <Item code="44" name="acetyl chloride" priority="0" status="V" />
+ <Item code="45" name="acidic aq. solution" priority="0" status="V" />
+ <Item code="46" name="alkaline aq. solution" priority="0" status="V" />
+ <Item code="47" name="amyl alcohol" synonyms="pentanol" priority="0" status="V" />
+ <Item code="48" name="aq. acetate buffer" priority="0" status="V" />
+ <Item code="49" name="aq. buffer" priority="0" status="V" />
+ <Item code="50" name="aq. phosphate buffer" priority="0" status="V" />
+ <Item code="51" name="Ba(OD)2" priority="0" status="V" />
+ <Item code="52" name="Ba(OH)2" synonyms="barium hydroxide" priority="0" status="V" />
+ <Item code="53" name="benzene" priority="0" status="V" />
+ <Item code="54" name="benzene-d6" synonyms="C6D6" priority="0" status="V" />
+ <Item code="55" name="benzine" priority="0" status="V" />
+ <Item code="56" name="benzonitrile" priority="0" status="V" />
+ <Item code="57" name="benzyl alcohol" synonyms="phenylmethanol" priority="0" status="V" />
+ <Item code="58" name="biphenyl" priority="0" status="V" />
+ <Item code="59" name="bis-(2-hydroxyethyl) ether" synonyms="diethylene glycol" priority="0" status="V" />
+ <Item code="60" name="bis-(2-methoxyethyl) ether" priority="0" status="V" />
+ <Item code="61" name="bromoethane" synonyms="ethyl bromide" priority="0" status="V" />
+ <Item code="62" name="butan-1-ol" synonyms="1-butanol; butanol, 1-; butanol; n-butanol" priority="0" status="V" />
+ <Item code="63" name="butan-2-ol" synonyms="2-butanol; butanol, 2-; s-butanol; sec-butanol" priority="0" status="V" />
+ <Item code="64" name="butan-2-one" synonyms="2-butanone; butanone, 2-; MEK; methyl ethyl ketone" priority="0" status="V" />
+ 
+ <Item code="66" name="butyl acetate" synonyms="acetic acid butyl ester" priority="0" status="V" />
+ <Item code="67" name="Ca(OD)2" priority="0" status="V" />
+ <Item code="68" name="Ca(OH)2" synonyms="calcium hydroxide" priority="0" status="V" />
+ <Item code="69" name="CHClF2" priority="0" status="V" />
+ <Item code="70" name="chlorobenzene" priority="0" status="V" />
+ <Item code="71" name="chloroform" synonyms="CHCl3" priority="0" status="V" />
+ <Item code="72" name="chloroform-d1" synonyms="CDCl3" priority="0" status="V" />
+ <Item code="73" name="chlorosulfonic acid" synonyms="ClSO3H " priority="0" status="V" />
+ <Item code="74" name="cis-1,2-dichloroethene" synonyms="dichloroethene, cis-1,2-" priority="0" status="V" />
+ <Item code="75" name="cis-5,8,11,14,17-eicosapentaenic acid" synonyms="eicosapentaenic acid, cis-5,8,11,14,17-; EPA" priority="0" status="V" />
+ <Item code="76" name="ClSO2F" synonyms="sulfuryl chloride fluoride" priority="0" status="V" />
+ <Item code="77" name="conc. DBr" priority="0" status="V" />
+ <Item code="78" name="conc. DCl" priority="0" status="V" />
+ <Item code="79" name="conc. DNO3" priority="0" status="V" />
+ <Item code="80" name="conc. H2SO4" priority="0" status="V" />
+ <Item code="81" name="conc. H3PO4" priority="0" status="V" />
+ <Item code="82" name="conc. HBr" priority="0" status="V" />
+ <Item code="83" name="conc. HCl" priority="0" status="V" />
+ <Item code="84" name="conc. HNO3" priority="0" status="V" />
+ <Item code="85" name="CS2" synonyms="carbon disulfide" priority="0" status="V" />
+ <Item code="86" name="CsI" priority="0" status="V" />
+ <Item code="87" name="cyclohexane" priority="0" status="V" />
+ <Item code="88" name="cyclohexane-d12" priority="0" status="V" />
+ <Item code="89" name="cyclohexanol" priority="0" status="V" />
+ <Item code="90" name="cyclohexanone" priority="0" status="V" />
+ <Item code="91" name="cyclohexene" priority="0" status="V" />
+ <Item code="92" name="cyclohexyl acetate" priority="0" status="V" />
+ <Item code="93" name="cyclohexylamine" priority="0" status="V" />
+ <Item code="94" name="cyclooctane" priority="0" status="V" />
+ <Item code="95" name="cyclopentane" priority="0" status="V" />
+ <Item code="96" name="D2O" synonyms="water-d2" priority="0" status="V" />
+ <Item code="97" name="D2SO4" synonyms="sulfuric acid-d2" priority="0" status="V" />
+ <Item code="98" name="DBr" priority="0" status="V" />
+ <Item code="99" name="DCl" priority="0" status="V" />
+ <Item code="100" name="DClO4" priority="0" status="V" />
+ <Item code="101" name="decalin" synonyms="decahydronaphthalene" priority="0" status="V" />
+ <Item code="102" name="decane" priority="0" status="V" />
+ <Item code="103" name="DF" priority="0" status="V" />
+ <Item code="104" name="dichlorodifluoromethane" priority="0" status="V" />
+ <Item code="105" name="dichlorofluoromethane" priority="0" status="V" />
+ <Item code="106" name="dichloromethane" synonyms="CH2Cl2; DCM; methylene chloride; methylene dichloride" priority="0" status="V" />
+ <Item code="107" name="dichloromethane-d2" synonyms="CD2Cl2; methylene chloride-d2; methylene dichloride-d2" priority="0" status="V" />
+ <Item code="108" name="diethanol amine" priority="0" status="V" />
+ <Item code="109" name="diethyl ether" synonyms="ether" priority="0" status="V" />
+ <Item code="110" name="diethylamine" priority="0" status="V" />
+ <Item code="111" name="difluoromethane" priority="0" status="V" />
+ <Item code="112" name="diglyme" synonyms="diethylene glycol dimethyl ether" priority="0" status="V" />
+ <Item code="113" name="diisopropyl ether" priority="0" status="V" />
+ <Item code="114" name="dimethyl ether" priority="0" status="V" />
+ <Item code="115" name="dimethylamine" priority="0" status="V" />
+ <Item code="116" name="dimethylsulfoxide" synonyms="DMSO" priority="0" status="V" />
+ <Item code="117" name="dimethylsulfoxide-d6" synonyms="DMSO-d6" priority="0" status="V" />
+ <Item code="118" name="di-n-butyl ether" synonyms="dibutyl ether" priority="0" status="V" />
+ <Item code="119" name="dioxane-d8" priority="0" status="V" />
+ <Item code="120" name="diphenyl ether" priority="0" status="V" />
+ <Item code="121" name="diphenylmethane" priority="0" status="V" />
+ <Item code="122" name="DNO3" priority="0" status="V" />
+ <Item code="123" name="dodecane" priority="0" status="V" />
+ <Item code="124" name="eicosane" priority="0" status="V" />
+ <Item code="125" name="ethane-1,2-diol" synonyms="glycole" priority="0" status="V" />
+ <Item code="126" name="ethanethiol" priority="0" status="V" />
+ <Item code="127" name="ethanol" synonyms="ethyl alcohol" priority="0" status="V" />
+ <Item code="128" name="ethanol-d1" priority="0" status="V" />
+ <Item code="129" name="ethanol-d6" priority="0" status="V" />
+ <Item code="130" name="ethyl acetate" synonyms="acetic ester" priority="0" status="V" />
+ <Item code="131" name="ethyl methyl ether" priority="0" status="V" />
+ <Item code="132" name="ethylbenzene" priority="0" status="V" />
+ <Item code="133" name="film" priority="0" status="V" />
+ <Item code="134" name="fluorobenzene" priority="0" status="V" />
+ <Item code="135" name="fluorosulfonic acid" synonyms="FSO3H" priority="0" status="V" />
+ <Item code="136" name="formamide" priority="0" status="V" />
+ <Item code="137" name="formic acid" synonyms="HCOOH; methanoic acid" priority="0" status="V" />
+ <Item code="138" name="FSO3H / SbF5" synonyms="magic acid" priority="0" status="V" />
+ <Item code="139" name="glycerol" synonyms="1,2,3-propanetriol; glycerin" priority="0" status="V" />
+ <Item code="140" name="H2O2" synonyms="hydrogen peroxide" priority="0" status="V" />
+ <Item code="141" name="H2SO3" synonyms="sulfurous acid" priority="0" status="V" />
+ <Item code="142" name="H2SO4" synonyms="sulfuric acid" priority="0" status="V" />
+ <Item code="143" name="H3PO4" synonyms="phosphoric acid" priority="0" status="V" />
+ <Item code="144" name="HBr" synonyms="hydrobromic acid" priority="0" status="V" />
+ <Item code="145" name="HCl" synonyms="hydrochloric acid" priority="0" status="V" />
+ <Item code="146" name="HClO4" synonyms="perchloric acid" priority="0" status="V" />
+ <Item code="147" name="HCN" synonyms="hydrocyanic acid; hydrogen cyanide" priority="0" status="V" />
+ <Item code="148" name="heptan-1-ol" synonyms="1-heptanol; heptanol, 1-; heptanol; n-heptanol" priority="0" status="V" />
+ <Item code="149" name="heptane" priority="0" status="V" />
+ <Item code="150" name="hexachlorobuta-1,3-diene" synonyms="HCBD; hexachlorobutadiene" priority="0" status="V" />
+ <Item code="151" name="hexachloroethane" priority="0" status="V" />
+ <Item code="152" name="hexadecafluoroheptane" priority="0" status="V" />
+ <Item code="153" name="hexadecane" priority="0" status="V" />
+ <Item code="154" name="hexafluorobenzene" priority="0" status="V" />
+ <Item code="155" name="hexamethylphosphoric acid triamide" synonyms="HMPT; PO(NMe2)3" priority="0" status="V" />
+ <Item code="156" name="hexan-1-ol" synonyms="1-hexanol; hexanol, 1-; hexanol; n-hexanol" priority="0" status="V" />
+ <Item code="157" name="hexane" synonyms="n-hexane" priority="0" status="V" />
+ <Item code="158" name="HF" synonyms="hydrofluoric acid" priority="0" status="V" />
+ <Item code="159" name="HNO3" synonyms="nitric acid" priority="0" status="V" />
+ <Item code="160" name="isoamyl alcohol" synonyms="isopentanol; isopentyl alcohol" priority="0" status="V" />
+ <Item code="161" name="isobutanol" synonyms="2-methyl-1-propanol; i-butanol" priority="0" status="V" />
+ <Item code="162" name="isobutylene" synonyms="1,1-dimethylethene; 2-methyl-1-propene" priority="0" status="V" />
+ <Item code="163" name="isohexane" priority="0" status="V" />
+ <Item code="164" name="isopropyl acetate" priority="0" status="V" />
+ <Item code="165" name="KBr" priority="0" status="V" />
+ <Item code="166" name="KCl" priority="0" status="V" />
+ <Item code="167" name="kerosene" synonyms="kerosine" priority="0" status="V" />
+ <Item code="168" name="KI" priority="0" status="V" />
+ <Item code="169" name="KOD" priority="0" status="V" />
+ <Item code="170" name="KOH" synonyms="potassium hydroxide" priority="0" status="V" />
+ <Item code="171" name="light petroleum" priority="0" status="V" />
+ <Item code="172" name="ligroin" priority="0" status="V" />
+ <Item code="173" name="liquid Ar" synonyms="liquid argon" priority="0" status="V" />
+ <Item code="174" name="liquid CO2" synonyms="liquid carbon doxide" priority="0" status="V" />
+ <Item code="175" name="liquid COCl2" synonyms="liquid phosgene" priority="0" status="V" />
+ <Item code="176" name="liquid HBr" synonyms="liquid hydrogen bromide" priority="0" status="V" />
+ <Item code="177" name="liquid HCl" synonyms="liquid hydrogen chloride" priority="0" status="V" />
+ <Item code="178" name="liquid HCN" synonyms="liquid hydrocyanic acid; liquid hydrogen cyanide" priority="0" status="V" />
+ <Item code="179" name="liquid HF" synonyms="liquid hydrogen fluoride" priority="0" status="V" />
+ <Item code="180" name="liquid Kr" synonyms="liquid krypton" priority="0" status="V" />
+ <Item code="181" name="liquid N2" synonyms="liquid nitrogen" priority="0" status="V" />
+ <Item code="182" name="liquid Ne" synonyms="liquid neon" priority="0" status="V" />
+ <Item code="183" name="liquid NH3" synonyms="liquid ammonia" priority="0" status="V" />
+ <Item code="184" name="liquid O2" synonyms="liquid oxygen" priority="0" status="V" />
+ <Item code="185" name="liquid SF6" synonyms="liquid sulfur hexafluoride" priority="0" status="V" />
+ <Item code="186" name="liquid SO2" synonyms="liquid sulfur dioxide" priority="0" status="V" />
+ <Item code="187" name="liquid SOF2" synonyms="liquid thionyl fluoride" priority="0" status="V" />
+ <Item code="188" name="liquid Xe" synonyms="liquid xenon" priority="0" status="V" />
+ <Item code="189" name="melt" priority="0" status="V" />
+ <Item code="190" name="methanesulfonic acid" synonyms="CH3SO3H " priority="0" status="V" />
+ <Item code="191" name="methanol" synonyms="CH3OH" priority="0" status="V" />
+ <Item code="192" name="methanol-d1" synonyms="CH3OD" priority="0" status="V" />
+ <Item code="193" name="methanol-d3" synonyms="CD3OH" priority="0" status="V" />
+ <Item code="194" name="methanol-d4" synonyms="CD3OD" priority="0" status="V" />
+ <Item code="195" name="methyl acetate" synonyms="acetic acid methyl ester" priority="0" status="V" />
+ <Item code="196" name="methyl formate" synonyms="methyl formiate" priority="0" status="V" />
+ <Item code="197" name="methylamine" priority="0" status="V" />
+ <Item code="198" name="methylcyclohexane" priority="0" status="V" />
+ <Item code="199" name="methylformamide" priority="0" status="V" />
+ <Item code="200" name="mineral oil" priority="0" status="V" />
+ <Item code="201" name="m-xylene" synonyms="1,3-xylene; 1,3-xylol; m-xylol; xylene, 1,3-; xylol, 1,3-" priority="0" status="V" />
+ <Item code="202" name="N,N-dimethylacetamide" synonyms="DMA; DMAc; dimethylacetamide" priority="0" status="V" />
+ <Item code="203" name="N,N-dimethylaniline" priority="0" status="V" />
+ <Item code="204" name="N,N-dimethylformamide" synonyms="DMF" priority="0" status="V" />
+ <Item code="205" name="N,N-dimethylformamide-d6" synonyms="DMF-d6" priority="0" status="V" />
+ <Item code="206" name="N,N-dimethylformamide-d7" synonyms="DMF-d7" priority="0" status="V" />
+ <Item code="207" name="NaCl" synonyms="sodium chloride" priority="0" status="V" />
+ <Item code="208" name="NaDCO3" priority="0" status="V" />
+ <Item code="209" name="NaHCO3" synonyms="sodium hydrogencarbonate" priority="0" status="V" />
+ <Item code="210" name="NaOD" priority="0" status="V" />
+ <Item code="211" name="NaOH" synonyms="sodium hydroxide" priority="0" status="V" />
+ <Item code="212" name="ND3" priority="0" status="V" />
+ <Item code="213" name="neat (no solvent)" priority="0" status="V" />
+ <Item code="214" name="neat (no solvent, gas phase)" priority="0" status="V" />
+ <Item code="215" name="neat (no solvent, solid phase)" priority="0" status="V" />
+ <Item code="216" name="neat liquid" priority="0" status="V" />
+ <Item code="217" name="neutral aq. solution" priority="0" status="V" />
+ <Item code="218" name="NH3" priority="0" status="V" />
+ <Item code="219" name="nitrobenzene" priority="0" status="V" />
+ <Item code="220" name="nitrobenzene-d5" priority="0" status="V" />
+ <Item code="221" name="nitromethane" priority="0" status="V" />
+ <Item code="222" name="nitromethane-d3" priority="0" status="V" />
+ <Item code="223" name="nonane" priority="0" status="V" />
+ <Item code="224" name="nujol" priority="0" status="V" />
+ <Item code="225" name="octamethylcyclotetrasiloxane" priority="0" status="V" />
+ <Item code="226" name="octan-1-ol" synonyms="1-octanol; n-octanol; octanol, 1-; octanol" priority="0" status="V" />
+ <Item code="227" name="octane" synonyms="1-octane; n-octane" priority="0" status="V" />
+ <Item code="228" name="o-xylene" synonyms="1,2-xylene; 1,2-xylol; o-xylol; xylene, 1,2-; xylol, 1,2-" priority="0" status="V" />
+ <Item code="229" name="paraffin oil" priority="0" status="V" />
+ <Item code="230" name="pentan-3-one" priority="0" status="V" />
+ <Item code="231" name="pentane" priority="0" status="V" />
+ <Item code="232" name="pentane-2,4-dione" synonyms="2,4-pentanedione; acetyl acetone; pentanedione, 2,4-" priority="0" status="V" />
+ <Item code="233" name="petroleum ether" priority="0" status="V" />
+ <Item code="234" name="phenol" priority="0" status="V" />
+ <Item code="235" name="POCl3" synonyms="phosphorus oxychloride" priority="0" status="V" />
+ <Item code="236" name="polyethylene" priority="0" status="V" />
+ <Item code="237" name="propan-1-ol" synonyms="1-propanol; n-propanol; propanol, 1-; propanol" priority="0" status="V" />
+ <Item code="238" name="propan-2-ol" synonyms="2-propanol; i-propanol; isopropanol; propanol, 2-" priority="0" status="V" />
+ <Item code="239" name="propane-1,2-diol" synonyms="1,2-propanediol; propanediol, 1,2-" priority="0" status="V" />
+ <Item code="240" name="propionic acid" priority="0" status="V" />
+ <Item code="241" name="propionic acid anhydride" synonyms="propionic anhydride" priority="0" status="V" />
+ <Item code="242" name="propyl acetate" priority="0" status="V" />
+ <Item code="243" name="p-xylene" synonyms="1,4-xylene; 1,4-xylol; p-xylol; xylene, 1,4-; xylol, 1,4-" priority="0" status="V" />
+ <Item code="244" name="pyridine" priority="0" status="V" />
+ <Item code="245" name="pyridine-d5" synonyms="C5D5N" priority="0" status="V" />
+ <Item code="246" name="quinoline" priority="0" status="V" />
+ <Item code="247" name="SO2Cl2" synonyms="sulfurylchloride" priority="0" status="V" />
+ <Item code="248" name="SOCl2" synonyms="thionylchloride" priority="0" status="V" />
+ <Item code="249" name="solid F2" priority="0" status="V" />
+ <Item code="250" name="squalane" priority="0" status="V" />
+ <Item code="251" name="tert-butanol" synonyms="2-methyl-propan-2-ol; 2-methyl-2-propanol; t-butanol; t-butylalcohol; tert-butylalcohol" priority="0" status="V" />
+ <Item code="252" name="tert-butyl methyl ether" synonyms="methyl tert-butyl ether; MTBE" priority="0" status="V" />
+ <Item code="253" name="tetrachloroethene" synonyms="tetrachloroethylene" priority="0" status="V" />
+ <Item code="254" name="tetrachloromethane" synonyms="CCl4" priority="0" status="V" />
+ <Item code="255" name="tetrahydrofuran" synonyms="THF" priority="0" status="V" />
+ <Item code="256" name="tetrahydrofuran-d8" synonyms="THF-d8" priority="0" status="V" />
+ <Item code="257" name="tetrahydrothiophene" priority="0" status="V" />
+ <Item code="258" name="tetrahydrothiophene-1,1-dioxide" synonyms="sulfolane" priority="0" status="V" />
+ <Item code="259" name="thiophene" priority="0" status="V" />
+ <Item code="260" name="toluene" synonyms="methyl benzene" priority="0" status="V" />
+ <Item code="261" name="toluene-d8" priority="0" status="V" />
+ <Item code="262" name="trans-1,2-dichloroethene" synonyms="dichloroethene, trans-1,2-" priority="0" status="V" />
+ <Item code="263" name="tribromomethane" synonyms="bromoform" priority="0" status="V" />
+ <Item code="264" name="trichloroethene" synonyms="trichloroethylene" priority="0" status="V" />
+ <Item code="265" name="trichlorofluoromethane" priority="0" status="V" />
+ <Item code="266" name="triethylamine" priority="0" status="V" />
+ <Item code="267" name="triethylene glycol" priority="0" status="V" />
+ <Item code="268" name="triethylene glycol dimethyl ether" synonyms="triglyme" priority="0" status="V" />
+ <Item code="269" name="trifluoroacetic acid" synonyms="TFA" priority="0" status="V" />
+ <Item code="270" name="trifluoroacetic acid anhydride" priority="0" status="V" />
+ <Item code="271" name="trifluoroacetic acid-d1" synonyms="TFA-d1" priority="0" status="V" />
+ <Item code="272" name="trifluoromethane" priority="0" status="V" />
+ <Item code="273" name="trifluoromethanesulfonic acid" synonyms="CF3SO3H; triflic acid" priority="0" status="V" />
+ <Item code="274" name="trifluoromethanesulfonic acid-d1" synonyms="CF3SO3D; triflic acid-d1" priority="0" status="V" />
+ <Item code="275" name="tris-nonafluorobutylamine" priority="0" status="V" />
+ <Item code="276" name="vaseline" priority="0" status="V" />
+ <Item code="277" name="water" synonyms="H2O" priority="0" status="V" />
+ <Item code="278" name="xylene" synonyms="xylol" priority="0" status="V" />
+ <Item code="279" name="2-ethylhexanol" priority="0" status="V" />
+ <Item code="280" name="hexamethylphosphoramide" synonyms="HMPA" priority="0" status="V" />
+ <Item code="281" name="isopropylbenzene" synonyms="cumene" priority="0" status="V" />
+ <Item code="282" name="isobutyl acetate" synonyms="2-methylpropyl ethanoate" priority="0" status="V" />		
+ <Item code="283" name="anisole" synonyms="methoxybenzene" priority="0" status="V" />			
+ <Item code="284" name="propylene carbonate" synonyms="PC; 4-methyl-1,3-dioxolan-2-one" priority="0" status="V" />
+ <Item code="285" name="morpholine" priority="0" status="V" />		
+ <Item code="286" name="allyl alcohol" priority="0" status="V" />		
+ <Item code="287" name="cyclopentyl methyl ether" synonyms="CPME" priority="0" status="V" />		
+ <Item code="288" name="polyethylene glycol" synonyms="PEG" priority="0" status="V" />		
+ <Item code="289" name="N,N'-dimethylpropyleneurea" synonyms="DMPU" priority="0" status="V" />		
+ <Item code="290" name="pentafluorobenzene" synonyms="PFB" priority="0" status="V" />		
+ <Item code="291" name="methyl propionate" priority="0" status="V" />		
+ <Item code="292" name="1,3,5-trichlorobenzene" priority="0" status="V" />		
+ <Item code="293" name="cellosolve acetate" synonyms="2-ethoxyethyl acetate" priority="0" status="V" />		
+ <Item code="294" name="hexafluoroisopropanol" synonyms="HFIP" priority="0" status="V" />		
+ <Item code="295" name="hexylene glycol" priority="0" status="V" />		
+ <Item code="296" name="2-isopropoxyethanol" synonyms="isopropylglycol; ethylene glycol monoisopropyl ether" priority="0" status="V" />		
+ <Item code="297" name="methylbutyl ketone" synonyms="MBK" priority="0" status="V" />		
+ <Item code="298" name="n-octyl formamide" priority="0" status="V" />		
+ <Item code="299" name="dicyclohexyl ether" priority="0" status="V" />
+ <Item code="300" name="1,1-dichloroethylene" synonyms="1,1-DCE" priority="0" status="V" />
+</Lookup>

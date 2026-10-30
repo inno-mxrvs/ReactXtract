@@ -1,0 +1,457 @@
+SOURCE FILE: ARTICLE_molecules-31-03162.pdf
+TOTAL PDF PAGES: 16
+SELECTED ORIGINAL PAGES: 3, 4, 5, 9, 10, 11, 12, 13
+PAGES ROUTED TO AI VISION: 4, 10, 11
+NATIVE-TEXT-ONLY PAGES: 3, 5, 9, 12, 13
+NOTE: This diagnostic uses the same PyMuPDF column-aware text and table extraction as ReactXtract.
+
+######## CHUNK 1 ########
+
+=== SOURCE FILE: ARTICLE_molecules-31-03162.pdf | ORIGINAL PAGE: 3 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Molecules 2026, 31, 3162
+3 of 16
+were synthesized, and their herbicidal potential was evaluated via bioassays and molecular
+docking simulations.
+Figure 1. Design strategy of the title molecules.
+2. Results and Discussions
+2.1. Characterization of Acylthiourea Derivatives (4a–4w)
+2.1.1. FTIR
+Infrared absorption bands at 3390–3018 cm−1, 1697–1650 cm−1 and 1269–1205 cm−1
+were separately assigned to the N–H, C=O and C=S stretching vibrations, verifying the
+successful incorporation of the acylthiourea functional group within the target molecules.
+For some of the synthesized compounds, the N–H stretching signals displayed a red
+shift to lower wavenumbers. This spectral phenomenon originated from intramolecular
+hydrogen-bonding interactions between carbonyl oxygen and amino hydrogen atoms, a
+typical feature commonly observed in acylthiourea derivatives [43]. Intense absorption
+bands at 3088–3002 cm−1 verified the existence of aromatic C−H bonds originating from
+benzene ring stretching vibrations. Medium-intensity bands observed at 1550–1519 cm−1
+originated from aromatic C–C skeletal vibrations. Furthermore, absorption bands detected
+at 1157–1141 cm−1 were assigned to the C–N bond. All the feature absorption bands were
+consistent with the data documented in previous reports [44].
+2.1.2. 1H NMR
+All target compounds displayed expected splitting patterns and chemical shifts in
+their 1H NMR spectra. The singlet proton resonance assigned to the –CONH– moiety was
+observed at δ 12.03–12.73 ppm, while that corresponding to the –CSNH– group was located
+at δ 11.60–12.29 ppm. These two proton signals were the most useful signals in the 1H
+NMR spectra for confirming the acylthiourea structure of all derivatives [45,46]. The singlet
+of the thiourea –CSNH– proton displayed a higher chemical shift value than that of the
+amide –CONH– proton, a phenomenon attributed to intramolecular hydrogen-bonding
+interactions [47]. The methyl protons of the methylsulfone group produced singlet signals
+at δ 3.31–3.33 ppm, and aromatic protons of the benzene rings produced a series of multiplet
+resonances at δ 6.95–8.77 ppm.
+https://doi.org/10.3390/molecules31183162
+
+=== SOURCE FILE: ARTICLE_molecules-31-03162.pdf | ORIGINAL PAGE: 4 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Molecules 2026, 31, 3162
+4 of 16
+Detailed characterization data as well as FTIR and H1 NMR spectra for all title com-
+pounds (4a–4w) are provided in the Supplementary Materials.
+2.2. Herbicidal Activity
+Preliminary evaluation of the herbicidal efficacy of all synthesized derivatives was
+conducted via a Petri dish assay, with Brassica napus L. selected as the test plant. As a widely
+applied sulfonylureas herbicide, bensulfuron-methyl was chosen as positive control. As
+summarized in Table 1, the root-growth-inhibitory activity of the title compounds increased
+synchronously with treatment concentration. Furthermore, all the title compounds (except
+4h) achieved over 40% root-growth inhibition at 100 mg L−1. Compounds 4l, 4m, and
+4t displayed herbicidal efficacy equivalent to bensulfuron-methyl, whereas 4v exhibited
+superior herbicidal efficacy relative to the commercial AHAS inhibitor at 100 mg L−1.
+Table 1. The inhibitory effects of title compounds (4a–4w) on root growth of Brassica napus L.
+Compound
+R
+Inhibition (%)
+1 mg L−1
+10 mg L−1
+100 mg L−1
+4a
+2-F, 4-Cl
+19.84 ± 1.23 j
+25.00 ± 1.83 lm
+50.65 ± 1.59 hi
+4b
+3-CF3, 4-Cl
+58.87 ± 1.01 b
+63.71 ± 1.54 bc
+63.86 ± 1.90 f
+4c
+4-I
+31.61 ± 1.3 gh
+47.66 ± 1.78 ghi
+48.48 ± 1.48 ij
+4d
+2-F, 5-CF3
+40.48 ± 1.12 e
+44.35 ± 0.67 ij
+54.03 ± 1.26 gh
+4e
+2-CF3, 4-Br
+24.19 ± 2.01 i
+34.27 ± 1.87 kL
+48.23 ± 1.33 ij
+4f
+3-CF3, 4-F
+−8.87 ± 1.57 k
+35.48 ± 1.18 k
+70.13 ± 1.46 cde
+4g
+2-OCF3
+37.23 ± 1.13 ef
+44.06 ± 1.72 ij
+55.90 ± 1.21 g
+4h
+2-CH3
+−7.46 ± 1.21 k
+20.97 ± 1.39 m
+25.16 ± 1.71 L
+4i
+3-NO2
+28.55 ± 1.15 h
+29.90 ± 2.33 L
+44.68 ± 2.41 jk
+4j
+2-Cl, 3-Cl
+31.61 ± 2.13 gh
+33.06 ± 1.61 kL
+42.46 ± 1.49 k
+4k
+4-OCH3
+33.23 ± 1.54 fg
+45.56 ± 1.97 hij
+51.01 ± 1.94 ghi
+4l
+2-Cl, 6-Cl
+47.98 ± 1.34 c
+64.92 ± 1.52 b
+77.98 ± 1.87 ab
+4m
+4-NO2
+45.03 ± 0.87 cd
+57.66 ± 1.06 de
+78.94 ± 1.62 ab
+4n
+2-Cl, 5-Cl
+34.68 ± 1.77 fg
+53.15 ± 1.46 ef
+65.10 ± 0.53 f
+4o
+3-Cl
+33.64 ± 1.69 fg
+42.94 ± 1.19 ij
+49.19 ± 1.93 hij
+4p
+2-F, 4-F, 5-F
+20.16 ± 1.27 ij
+49.77 ± 1.16 fgh
+67.10 ± 1.77 def
+4q
+4-Cl
+78.71 ± 1.07 a
+43.39 ± 1.38 ij
+68.13 ± 1.18 def
+4r
+2-Cl, 4-Cl
+41.13 ± 0.65 de
+42.77 ± 1.41 j
+44.35 ± 1.22 jk
+4s
+4-CH3
+56.45 ± 1.82 b
+52.82 ± 1.15 ef
+71.69 ± 1.68 cd
+4t
+3-CH3
+35.48 ± 1.33 fg
+74.27 ± 2.14 a
+74.56 ± 1.64 bc
+4u
+2-NO2
+−6.45 ± 0.66 k
+64.92 ± 1.17 b
+65.29 ± 0.44 ef
+4v
+None
+35.32 ± 1.11 fg
+50.87 ± 0.76 fg
+81.77 ± 1.47 a
+4w
+2-CH3, 4-CH3
+21.37 ± 1.37 ij
+63.71 ± 1.80 bc
+64.31 ± 1.83 f
+bensulfuron-methyl
+-
+55.61 ± 1.51 b
+59.54 ± 1.86 cd
+78.01 ± 1.21 ab
+Data represent mean ± standard deviation (n = 3). Statistical analysis was performed via one-way
+ANOVA and subsequent Tukey’s HSD test at a significance level of p < 0.05. Statistically different
+values were indicated with different lowercase letters.
+Based on the Petri dish screening results, twelve derivatives with relatively strong
+herbicidal activity were selected for greenhouse pot trials to further evaluate their practical
+weed control potential. As shown in Figure 2, all test compounds exhibited pre-emergence
+herbicidal inhibitory activity against Digitaria adscendens, a typical monocotyledonous weed.
+At 100 mg L−1 pre-emergence application, the positive control bensulfuron-methyl yielded
+a 70.41 ± 1.21% weed control rate; by comparison, compounds 4l (67.77 ± 1.87%), 4m
+(69.34 ± 1.62%), and 4t (65.76 ± 1.53%) exhibited comparable activity, while compound 4v
+(76.48 ± 1.47%) displayed statistically significantly higher inhibitory effect on weed growth.
+For post-emergence application, most compounds (except 4v) failed to provide effective
+control on D. adscendens, and compounds 4f and 4w even showed growth-promoting effects
+on the tested weeds. Regarding the dicotyledonous weed A. retroflexus, only compounds
+4l, 4m and 4v displayed acceptable pre-emergence herbicidal efficacy, while other test
+https://doi.org/10.3390/molecules31183162
+
+=== SOURCE FILE: ARTICLE_molecules-31-03162.pdf | ORIGINAL PAGE: 5 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Molecules 2026, 31, 3162
+5 of 16
+compounds showed weak weed control efficacy. Post-emergence treatment results for A.
+retroflexus were similar to those observed for D. adscendens. Only compound 4v maintained
+favorable herbicidal activity. Collectively, these observations indicated that the target
+compounds exhibited greater herbicidal performance under pre-emergence application
+at 100 mg L−1. Among the tested derivatives, compounds 4l, 4m, 4t, and 4v showed
+encouraging weed-suppression potential under these assay conditions.
+Figure 2. Herbicidal activities of 12 target compounds against Digitaria adscendens and Amaranthus
+retroflexus under pre−and post−emergence treatments with 100 mg L−1 treatment concentration.
+Error bars denoted the standard deviation derived from three independent replicates. Statistical
+significance was determined by one−way ANOVA followed by Tukey’s HSD test (p < 0.05) and
+indicated with different lowercase letters.
+Structure–activity relationship studies indicated that the substituents of aniline exert
+prominent effects on the bioactivity of the title compounds. At 100 mg L−1 pre-emergence
+application, we found most of the title compounds with monosubstituted anilines, such
+as 4m (R=4-NO2), 4q (R=4-Cl), 4s (R=4-CH3), and 4t (R=3-CH3), showed relatively higher
+herbicidal activity than those with di- or trisubstituted anilines (with compound 4l as an
+exception). This was consistent with our previous work [40], and comparable structure-
+dependent activity trends have also been reported for commercial sulfonylurea herbicides.
+The reason for this might be that substituents with smaller spatial volume allow the ligand
+to fit more easily into the enzyme active pocket. This phenomenon could be utilized for
+structural design of novel acylthioureas in subsequent research. Moreover, the substitution
+site on the aniline ring is another critical factor modulating compound bioactivity. Within
+the dichlorophenyl-substituted series, the 2,6-dichloro derivative (compound 4l) displayed
+higher herbicidal activity against weeds compared with its three isomers (4j, 4r, 4n), which
+might be attributed to the favorable spatial conformation of 2,6-disubstituted phenyl
+groups when bound to the enzyme. Notably, compound 4v showed the highest overall
+herbicidal activity of all derivatives, and its aniline moiety carries no substituents. This
+may stem from the compact overall molecular size of compound 4v, which facilitates
+the molecule to approach and interact with the target enzyme. With respect to electronic
+https://doi.org/10.3390/molecules31183162
+
+=== SOURCE FILE: ARTICLE_molecules-31-03162.pdf | ORIGINAL PAGE: 9 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Molecules 2026, 31, 3162
+9 of 16
+the acyl oxygen on the acylthiourea moiety to Val571. For compound 4m (Figure 6B),
+five hydrogen bonds exist between the ligand and AHAS. Its methylsulfonyl group es-
+tablishes two hydrogen-bond contacts with Met333 and Thr331. The NH group of the
+acylthiourea moiety forms one hydrogen bond with Gly508, while the nitro substituent on
+the aniline ring generates two hydrogen bonds with His352 and Arg377. As shown in Fig-
+ure 6C, the binding mode of compound 4v resembles that of 4l. The methylsulfonyl group of
+4v creates five hydrogen bonds with Ser540/Gly539/Asp538/His567, with one supplemen-
+tary hydrogen bond bridging the acyl group and Val571. The superior inhibitory activity
+of 4l and 4v suggests that these five residues (Ser540/Gly539/Asp538/His567/Val571)
+may serve as important interaction partners for acylthiourea ligands in simulated dock-
+ing poses. Site-directed mutagenesis studies would be required to experimentally verify
+their functional importance. As shown in Figure 6D, the positive control bensulfuron-
+methyl only forms three hydrogen bonds with AHAS: two from its sulfonylurea moiety
+to Arg377, and one from pyrimidine methoxy to Met570. Compared with bensulfuron-
+methyl (only three hydrogen bonds with Arg377 and Met570), 4l, 4m, and 4v establish
+five-to-six hydrogen-bond interactions within the AHAS binding cavity. The increased
+number of hydrogen-bond contacts partially accounts for their more favorable binding
+energies and stronger in vivo AHAS-inhibitory performance. Specifically, the methylsul-
+fonyl group in 4l and 4v engages a cluster of four residues (Ser540, Gly539, Asp538, His567)
+that bensulfuron-methyl does not contact, anchoring the ligand more firmly in the active
+pocket. For 4m, the nitro substituent on the aniline ring provides additional hydrogen-bond
+donor/acceptor interactions with His352 and Arg377, compensating for the absence of the
+2,6-dichloro substitution pattern. This observation indicates that strengthened hydrogen-
+bonding contacts between the ligand and protein pocket facilitate enhanced compound
+bioactivity. Hence, rational structural optimization to strengthen hydrogen-bond inter-
+actions between acylthiourea derivatives and AHAS represents an effective strategy to
+discover new AHAS-inhibiting herbicides. It should be noted that molecular docking
+provides in silico supportive evidence for ligand–protein interactions rather than definitive
+experimental proof. The observed binding modes and interaction patterns should be inter-
+preted as hypotheses that warrant further experimental validation, such as site-directed
+mutagenesis or co-crystallization studies.
+Figure 5. Molecular docking simulation of title compounds in the active cavity of AHAS.
+https://doi.org/10.3390/molecules31183162
+
+=== SOURCE FILE: ARTICLE_molecules-31-03162.pdf | ORIGINAL PAGE: 10 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Molecules 2026, 31, 3162
+10 of 16
+Figure 6. Binding mode of compounds. (A) Binding mode of compound 4l; (B) Binding mode of
+compound 4m; (C) Binding mode of compound 4v; (D) Binding mode of bensulfuron-methyl.
+3. Materials and Methods
+3.1. Instruments and Chemicals
+A micro melting-point apparatus (Tech. Instrument Co., Ltd., Beijing, China) was
+utilized to determine melting points of all title compounds. A Bruker AVANCE-400 spec-
+trometer (Bruker, Bremen, Germany) operating at 400 MHz was employed to collect the 1H
+NMR spectra of synthesized compounds. DMSO-d6 served as the dissolving solvent, and
+tetramethylsilane (TMS) was adopted as the internal standard. A PerkinElmer Vario EL III
+elemental analyzer (Perkin Elmer, Waltham, MA, USA) was used to perform elemental mi-
+croanalysis. A Shimadzu FTIR-8400S spectrophotometer (SHIMADZU, Kyoto, Japan) was
+utilized to record FTIR spectra over the wavenumber range of 400–4000 cm−1. Thin-layer
+chromatography (TLC) was applied to track the progress of all synthetic transformations.
+Mass spectra were acquired using an Agilent 1260-6460 LC–MS system (Agilent, Santa
+Clara, CA, USA). A Rayto RT-6100 microplate reader (Rayto Life and Analytical Science
+Co., Ltd., Shenzhen, China) was used to quantify signals for enzyme activity assays.
+3.2. Experimental
+General Procedure for the Synthesis of Acylthiourea Derivatives
+The synthetic route for all target derivatives was designed based on our previously
+reported procedure [40]. As shown in Scheme 1, the synthetic procedure is described as
+follows: 15 mmol 4-methylsulfonyl benzoic acid (intermediate 1) and 15 mL of thionyl
+chloride were loaded into a round-bottomed flask. After 4 h of reflux treatment, the
+reaction system was concentrated to obtain the intermediate 2. Subsequently, potassium
+thiocyanate (15 mmol), catalyst (PEG-400, 3 mol % relative to potassium thiocyanate), and
+an appropriate volume of anhydrous CH2Cl2 were combined with intermediate 2 to form a
+suspension. The suspension was stirred for 2 h, and then filtered to obtain intermediate
+3. Next, 10 mmol of the corresponding substituted aniline was added to intermediate 3.
+After gentle stirring for 1 h, the mixture was filtered, and ethanol was used to rinse the
+filter residues. Finally, the pure target compounds were obtained through recrystallization
+from a ternary mixed solvent of DMF–EtOH–H2O.
+https://doi.org/10.3390/molecules31183162
+
+=== SOURCE FILE: ARTICLE_molecules-31-03162.pdf | ORIGINAL PAGE: 11 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Molecules 2026, 31, 3162
+11 of 16
+Scheme 1. Synthesis route of the title compounds.
+3.3. Herbicidal Activity Assay
+3.3.1. Petri Dish Test
+Seeds of Brassica napus L. were chosen as test plants for preliminary screening of
+the biological activities of all title compounds through a Petri dish test. Stock working
+solutions were formulated by mixing 10 mg of each test compound with 0.05 mL Tween
+80 (emulsifier) and 0.25 mL DMF (solvent), followed by serial dilution with deionized
+water to final concentrations of 1, 10, and 100 mg L−1. Parallel treatments containing
+bensulfuron-methyl were set up as the positive control under matching solvent and culture
+conditions, while blank controls were prepared without any test compound addition.
+Prior to treatment, B. napus seeds were pre-incubated at 30 ± 1 ◦C in darkness for
+24 h to complete germination. Twenty uniform pre-germinated seeds were transferred to
+each Petri dish and overlaid with filter paper soaked in 5 mL test solution. All dishes were
+incubated at 30 ± 1 ◦C under continuous dark conditions for 48 h. Each experiment was
+repeated in triplicate. The root-growth inhibition efficacy of each compound was quantified
+via Equation (1):
+Control effect (%) = Lb −Lt
+Lb
+× 100%
+(1)
+where Lt and Lb represented the mean root lengths of Brassica napus L. seedlings under
+treatment with test compounds and blank control groups, respectively.
+3.3.2. Greenhouse Herbicidal Activity Test
+Greenhouse pot trials were conducted against Digitaria adscendens and Amaranthus
+retroflexus to assess the herbicidal potency of all title compounds. Pots with an 8 cm inner
+diameter were filled with 100 g soil (60 g sand and 40 g clay). Twenty pre-germinated
+seeds were sown at a depth of 0.6 cm inside each pot and cultivated under controlled
+greenhouse conditions (25 ◦C, 60–70% relative humidity, 14 h light/10 h dark photope-
+riod). Each treatment was performed with 3 biological replicates (three pots per replicate,
+20 seeds per pot). Pots were arranged according to a completely randomized layout and
+weekly re-randomization was carried out to mitigate location-dependent experimental
+artifacts. Stock solutions were formulated by dissolving each compound in 2.5 mL DMF
+https://doi.org/10.3390/molecules31183162
+
+=== SOURCE FILE: ARTICLE_molecules-31-03162.pdf | ORIGINAL PAGE: 12 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Molecules 2026, 31, 3162
+12 of 16
+supplemented with 0.5 mL Tween 80, followed by serial dilution with deionized water to
+obtain the test solution with required concentration. Positive controls were prepared with
+bensulfuron-methyl under identical solvent conditions, while blank controls contained
+only DMF and Tween 80 without any herbicidal compounds. For pre-emergence treatment,
+5 mL test solution of each title compound was sprayed on the soil after 24 h seed incubation.
+For post-emergence treatment, 5 mL test solution was sprayed onto weeds at the two-leaf
+growth stage. After 20 days of greenhouse cultivation, surviving weed individuals per pot
+were counted, and weed control efficacy was calculated via Equation (2):
+Control effect (%) = Nb −Nt
+Nb
+× 100%
+(2)
+where Nt and Nb were the numbers of surviving weeds per pot under test compound
+treatments and blank control treatments, respectively.
+3.3.3. AHAS Activity in Plant Extracts Following In Vivo Compound Treatment
+Seed incubation of Brassica napus L. was performed at 30 ± 1 ◦C under dark conditions
+for 48 h using the established Petri dish assay protocol. Pre-germinated seeds (0.5 g)
+were ground using phosphate-buffered saline (PBS; 50 mmol L−1, pH 7.0) for sample
+preparation. The obtained homogenate underwent centrifugation at 4000 r·min−1 and 4 ◦C
+over a 15-min period, and the recovered supernatant served as crude enzyme extract. A
+commercially available ELISA kit was used to measure AHAS activity at 450 nm according
+to the guidelines of the manufacturer. Bensulfuron-methyl was included as positive control.
+Each enzyme assay was carried out in triplicate using separate biological samples. All
+test solutions were prepared following the protocol outlined in Section 3.3.2. The relative
+AHAS inhibition rate was calculated as:
+Inhibition (%) = 1 −ODtreatment
+ODcontrol
+× 100%
+(3)
+where ODtreatment and ODcontrol represent the absorbance values of compound-treated and
+solvent-treated samples, respectively. Bensulfuron-methyl was included as positive control.
+Each assay was carried out in triplicate.
+3.3.4. Crop Safety Test
+Wheat (Triticum aestivum, gramineous crop) and soybean (Glycine max (Linn.) Merr.,
+dicotyledonous crop) were chosen for crop safety evaluation. All cultivation and spraying
+operations strictly complied with the experimental procedures detailed in Section 3.3.2,
+Greenhouse herbicidal activity test.
+3.4. Molecular Docking
+All target acylthiourea derivatives were sketched as 2D structures in ChemDraw ultra
+18.0, and their conformations were subjected to MM2 force field energy minimization
+within Chem3D 18.0. Fully optimized 3D ligand molecules (4a–4w) were saved as input
+files for subsequent in silico docking simulations. The crystal structure of plant AHAS
+was retrieved from the PDB database (PDB accession code: 1YHZ). Prior to docking, co-
+crystallized ligands, water molecules, and metal ions were removed from the PDB 1YHZ
+structure to obtain the apo-protein conformation via PyMOL 3.1. This pre-processing step
+allows uniform docking of all test ligands into the unoccupied inhibitor-binding pocket of
+AHAS, eliminating interference from pre-bound co-crystallized small molecules.
+The optimized ligand molecules were docked to AHAS via Auto Dock 4.2.6 software,
+and a total of 50 separate docking runs were conducted with the Genetic Algorithm (GA)
+https://doi.org/10.3390/molecules31183162
+
+=== SOURCE FILE: ARTICLE_molecules-31-03162.pdf | ORIGINAL PAGE: 13 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Molecules 2026, 31, 3162
+13 of 16
+computational module. Most of the parameters for the docking calculation were set to
+the default values recommended by the software. The lowest-energy binding pose of
+each compound was isolated for systematic characterization of protein–ligand intermolec-
+ular contacts. The pose with the minimum binding free energy was selected for visual
+analysis of ligand–protein binding modes using PyMOL 3.1. For comparison, the com-
+mercial inhibitor bensulfuron-methyl was processed and docked following the exact same
+computational workflow as all test ligands. We performed re-docking of the native co-
+crystallized chlorsulfuron ligand into the AHAS to assess the performance of the docking
+protocol. The re-docked pose showed good overlap with the original crystal conformation
+(RMSD < 2.0 Å), confirming the reliability of our docking parameter setup.
+3.5. Statistical Analysis
+Every biological experiment was conducted with three separate biological replicates,
+and experimental outcomes are reported as the mean ± standard deviation (SD). A one-way
+analysis of variance (ANOVA) coupled with Tukey’s honestly significant difference (HSD)
+post hoc procedure was applied for inter-group comparisons. Statistical differences between
+treatments were recognized as significant when p < 0.05. All statistical computations were
+completed with SPSS software (version 30.0).
+4. Conclusions
+Herein, we designed and synthesized a series of twenty-three novel acylthiourea
+derivatives via bioisosteric replacement and fragment recombination, incorporating a
+mesotrione-derived aromatic fragment into the acylthiourea scaffold. At 100 mg L−1 treat-
+ment concentration, compounds 4l, 4m, and 4v exhibited herbicidal activity comparable to
+bensulfuron-methyl, with all compounds producing less than 20% growth inhibition on
+wheat and soybean, indicating preliminary crop selectivity. In vivo AHAS activity assays
+showed that 4l, 4m, and 4v achieved AHAS inhibition rates comparable to or numerically
+higher than bensulfuron-methyl at the tested concentration. Molecular docking simulations
+provided supportive in silico evidence that these three compounds form more hydrogen-
+bond interactions with AHAS active-site residues than bensulfuron-methyl, consistent
+with their more favorable binding energies. The present findings are preliminary and
+imply that the synthesized acylthiourea analogs could act as lead scaffolds for follow-up
+structural modification. These compounds can also offer valuable clues to design new
+AHAS-targeting inhibitors via further structural derivatization. However, systematic in-
+vestigations including full dose–response determination, in vitro AHAS kinetic assays,
+deeper mechanistic studies, field-efficacy trials, and comprehensive toxicological and
+environmental-safety assessments are required before their practical herbicidal potential
+can be fully validated.
+Supplementary Materials: The following supporting information can be downloaded at https:
+//www.mdpi.com/article/10.3390/molecules31183162/s1. File S1: 1. Characterization data of
+acylthiourea derivatives (4a–4w); 2. FTIR and 1H NMR spectra of acylthiourea derivatives (4a–4w).
+Author Contributions: Conceptualization, R.L. and Y.W.; methodology, R.L. and B.J.; software, B.J.
+and X.H.; validation, B.J., X.C. and R.L.; formal analysis, B.J. and Y.C.; investigation, B.J., X.C. and
+X.H.; resources, R.L.; data curation, B.J., X.C. and Y.C.; writing—original draft preparation, B.J.;
+writing—review and editing, R.L. and Y.W.; visualization, B.J. and X.C.; supervision, R.L. and Y.W.;
+project administration, X.C. and R.L.; funding acquisition, R.L. All authors have read and agreed to
+the published version of the manuscript.
+Funding: This research was funded by Department of Education of Jilin Province, China (Grant
+No. JJKH20240462KJ).
+https://doi.org/10.3390/molecules31183162

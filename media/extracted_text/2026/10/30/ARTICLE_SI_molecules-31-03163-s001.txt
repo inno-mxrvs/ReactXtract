@@ -1,0 +1,335 @@
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 1 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Synthesis of Quinazoline Derivatives and Mechanistic Approaches in Lung
+and Breast Cancers
+Aybüke Züleyha Kaya 1,2, Beyzanur Tutuş 2,3, Şevval Karaca Arpa 4,5, Asaf Evrim Evren 1,
+Gülşen Akalin Çiftçi 5, Halide Edip Temel 5 and Leyla Yurttaş 1,*
+1 Department of Pharmaceutical Chemistry, Faculty of Pharmacy, Anadolu University,
+Eskişehir 26470, Türkiye
+2 Department of Pharmaceutical Chemistry, Graduate School, Anadolu University,
+Eskişehir 26470, Türkiye
+3 Kırıkhan Vocational School, Hatay Mustafa Kemal University, Hatay 31440, Türkiye
+4 Department of Biochemistry, Graduate School, Anadolu University, Eskişehir 26470, Türkiye
+5
+Department
+of
+Biochemistry,
+Faculty
+of
+Pharmacy,
+Anadolu
+University,
+Eskişehir 26470, Türkiye
+* Correspondence: lyurttas@anadolu.edu.tr
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 2 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S1. HRMS spectrum of compound 4a
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 3 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S2. 1H-NMR spectrum of compound 4a
+Figure S3. 13C-NMR spectrum of compound 4a
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 4 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S4. HRMS spectrum of compound 4b
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 5 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S5. 1H-NMR spectrum of compound 4b
+Figure S6. 13C-NMR spectrum of compound 4b
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 6 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S7. HRMS spectrum of compound 4c
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 7 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S8. 1H-NMR spectrum of compound 4c
+Figure S9. 13C-NMR spectrum of compound 4c
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 8 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S10. HRMS spectrum of compound 4d
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 9 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S11. 1H-NMR spectrum of compound 4d
+Figure S12. 13C-NMR spectrum of compound 4d
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 10 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S13. HRMS spectrum of compound 4e
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 11 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S14. 1H-NMR spectrum of compound 4e
+Figure S15. 13C-NMR spectrum of compound 4e
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 12 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S16. HRMS spectrum of compound 4f
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 13 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S17. 1H-NMR spectrum of compound 4f
+Figure S18. 13C-NMR spectrum of compound 4f
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 14 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S19. HRMS spectrum of compound 4g
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 15 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S20. 1H-NMR spectrum of compound 4g
+Figure S21. 13C-NMR spectrum of compound 4g
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 16 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S22. HRMS spectrum of compound 4h
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 17 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S23. 1H-NMR spectrum of compound 4h
+Figure S24. 13C-NMR spectrum of compound 4h
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 18 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S25. HRMS spectrum of compound 4i
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 19 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S26. 1H-NMR spectrum of compound 4i
+Figure S27. 13C-NMR spectrum of compound 4i
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 20 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S28. HRMS spectrum of compound 4j
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 21 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S29. 1H-NMR spectrum of compound 4j
+Figure S30. 13C-NMR spectrum of compound 4j
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 22 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S31. HRMS spectrum of compound 4k
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 23 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S32. 1H-NMR spectrum of compound 4k
+Figure S33. 13C-NMR spectrum of compound 4k
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 24 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S34. HRMS spectrum of compound 4l
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 25 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S35. 1H-NMR spectrum of compound 4l
+Figure S36. 13C-NMR spectrum of compound 4l
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 26 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S37. HRMS spectrum of compound 4m
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 27 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S38. 1H-NMR spectrum of compound 4m
+Figure S39. 13C-NMR spectrum of compound 4m
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 28 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S40. IR spectrum of compound 4n
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 29 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S41. 1H-NMR spectrum of compound 4n
+Figure S42. 13C-NMR spectrum of compound 4n
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 30 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S43. IR spectrum of compound 4o
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 31 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S44. 1H-NMR spectrum of compound 4o
+Figure S45. 13C-NMR spectrum of compound 4o
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 32 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S46. HRMS spectrum of compound 4p
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 33 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S47. 1H-NMR spectrum of compound 4p
+Figure S48. 13C-NMR spectrum of compound 4p
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 34 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S49. HRMS spectrum of compound 4q
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 35 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S50. 1H-NMR spectrum of compound 4q
+Figure S51. 13C-NMR spectrum of compound 4q
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 36 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S52. HRMS spectrum of compound 4r
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 37 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S53. 1H-NMR spectrum of compound 4r
+Figure S54. 13C-NMR spectrum of compound 4r
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 38 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S55. HRMS spectrum of compound 4s
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 39 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S56. 1H-NMR spectrum of compound 4s
+Figure S57. 13C-NMR spectrum of compound 4s
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 40 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S58. HRMS spectrum of compound 4t
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 41 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S59. 1H-NMR spectrum of compound 4t
+Figure S60. 13C-NMR spectrum of compound 4t
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 42 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S61. HRMS spectrum of compound 4u
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 43 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S62. 1H-NMR spectrum of compound 4u
+Figure S63. 13C-NMR spectrum of compound 4u
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 44 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S64. HRMS spectrum of compound 4v
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 45 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S65. 1H-NMR spectrum of compound 4v
+Figure S66. 13C-NMR spectrum of compound 4v
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 46 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S67. HRMS spectrum of compound 4w
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 47 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S68. 1H-NMR spectrum of compound 4w
+Figure S69. 13C-NMR spectrum of compound 4w
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 48 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S70. IR spectrum of compound 4x
+
+<<< REACTXTRACT PAGE BREAK >>>
+
+=== SOURCE FILE: ARTICLE_SI_molecules-31-03163-s001.pdf | ORIGINAL PAGE: 49 ===
+[NATIVE TEXT — COLUMN-AWARE READING ORDER]
+Figure S71. 1H-NMR spectrum of compound 4x
+Figure S72. 13C-NMR spectrum of compound 4x

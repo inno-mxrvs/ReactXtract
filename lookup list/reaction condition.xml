@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="Windows-1252" standalone="yes"?>
+<Lookup type="T_REACOND">
+  <Item code="1" name="&amp;gamma;-Irradiation" priority="0" status="V" />
+  <Item code="2" name="Electrochemical reaction" priority="0" status="V" />
+  <Item code="3" name="Electrolysis" priority="0" status="V" />
+  <Item code="4" name="Flash photolysis" priority="0" status="V" />
+  <Item code="5" name="Irradiation" priority="0" status="V" />
+  <Item code="6" name="Microbiological reaction" priority="0" status="V" />
+  <Item code="7" name="Reflux" priority="0" status="V" />
+  <Item code="8" name="Photolysis" priority="0" status="V" />
+  <Item code="9" name="Cooling with liquid nitrogen" priority="0" status="V" />
+  <Item code="10" name="Cooling with acetone-dry ice" priority="0" status="V" />
+  <Item code="11" name="Cooling with ethanol-dry ice" priority="0" status="V" />
+  <Item code="12" name="Cooling with ether-dry ice" priority="0" status="V" />
+  <Item code="13" name="Micellar solution" priority="0" status="V" />
+  <Item code="14" name="Gas phase" priority="0" status="V" />
+  <Item code="16" name="Saturated solution" priority="0" status="V" />
+  <Item code="17" name="Saturated gas" priority="0" status="V" />
+  <Item code="18" name="Pyrolysis" priority="0" status="V" />
+  <Item code="19" name="Acidic conditions" priority="0" status="V" />
+  <Item code="20" name="Radiolysis" priority="0" status="V" />
+  <Item code="21" name="Alkaline conditions" priority="0" status="V" />
+  <Item code="22" name="Combinatorial reaction / High throughput screening (HTS)" priority="0" status="V" />
+  <Item code="23" name="Solvolysis" priority="0" status="V" />
+  <Item code="24" name="Resolution of racemate" priority="0" status="V" />
+  <Item code="25" name="UV-irradiation" priority="0" status="V" />
+  <Item code="28" name="Molecular sieve" priority="0" status="V" />
+  <Item code="29" name="Supercritical conditions" priority="0" status="V" />
+  <Item code="30" name="Autoclave" priority="0" status="V" />
+  <Item code="31" name="Sonication" priority="0" status="V" />
+  <Item code="32" name="Cooling with ice" priority="0" status="V" />
+  <Item code="33" name="Ionic liquid" priority="0" status="V" />
+  <Item code="37" name="Darkness" priority="0" status="V" />
+  <Item code="38" name="Inert atmosphere" priority="0" status="V" />
+  <Item code="39" name="Automated synthesizer" priority="0" status="V" />
+  <Item code="41" name="Cooling" priority="0" status="V" />
+  <Item code="42" name="Heating" priority="0" status="V" />
+  <Item code="43" name="Microwave irradiation" priority="0" status="V" />
+  <Item code="44" name="Neutral conditions" priority="0" status="V" />
+  <Item code="45" name="Sealed tube" priority="0" status="V" />
+  <Item code="46" name="Flow reactor" priority="0" status="V" />
+  <Item code="47" name="High pressure" priority="0" status="V" />
+  <Item code="48" name="Electric arc" priority="0" status="V" />
+  <Item code="49" name="Dean-Stark" priority="0" status="V" />
+  <Item code="50" name="Glovebox" priority="0" status="V" />
+  <Item code="51" name="Schlenk technique" priority="0" status="V" />
+  <Item code="52" name="Milling" priority="0" status="V" />
+  <Item code="53" name="Calcination" priority="0" status="V" />
+</Lookup>

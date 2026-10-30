@@ -1,0 +1,13 @@
+<header class="topbar">
+    <nav class="nav shell" aria-label="Primary navigation">
+        <a class="brand" href="{% url 'home' %}" aria-label="ReactXtract home">
+            <span class="brand__mark" aria-hidden="true">Rx</span>
+            <span><strong>React</strong>Xtract</span>
+        </a>
+        <div class="nav__links">
+            <a href="{% url 'home' %}" {% if request.resolver_match.url_name == 'home' %}aria-current="page"{% endif %}>New extraction</a>
+            <a href="{% url 'records' %}" {% if request.resolver_match.url_name == 'records' %}aria-current="page"{% endif %}>Records</a>
+        </div>
+    </nav>
+</header>
+

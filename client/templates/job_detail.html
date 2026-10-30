@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+{% load reactxtract %}
+{% block title %}{{ job.title }} | ReactXtract{% endblock %}
+{% block content %}
+<main class="extraction-page"{% if is_draft %} data-unsaved-review{% endif %}>
+    <header class="extract-toolbar shell">
+        <div class="extract-toolbar__title">
+            <a class="back-link" href="{% url 'records' %}">&larr; Records</a>
+            <div><span class="eyebrow">EXTRACTION WORKSPACE</span><h1>{{ job.title }}</h1></div>
+        </div>
+        <div class="extract-toolbar__meta">
+            <span class="status status--{{ job.status }}">{{ job.get_status_display }}</span>
+            <span>{{ display_reaction_count }} reactions</span><span>{{ job.total_tokens }} tokens</span><span>${{ job.estimated_cost_usd }}</span>
+            <span title="Extraction processing duration">Processed in {{ job.processing_duration_ms|duration_ms }}</span>
+            {% if job.completed_at %}<span title="Time saved to the database">Saved {{ job.completed_at|date:'M j, Y · g:i:s A' }}</span>{% endif %}
+        </div>
+        <div class="actions">
+            <a class="button button--ghost" href="{% url 'export_usage_csv' job.id %}">Token costs</a>
+            {% if is_draft %}<form action="{% url 'discard_draft' job.id %}" method="post" data-draft-resolution>{% csrf_token %}<button class="button button--ghost" type="submit">Discard</button></form>{% endif %}
+            {% if not is_draft %}<a class="button button--secondary" href="{% url 'export_job_json' job.id %}">JSON</a><a class="button button--primary" href="{% url 'export_job_csv' job.id %}">Reaction CSV</a>{% endif %}
+        </div>
+    </header>
+
+    {% if job.status == 'failed' %}<div class="error-panel shell"><strong>Extraction failed</strong><p>{{ job.error_message }}</p><p>Uploaded files and completed token records remain saved for diagnosis.</p></div>{% endif %}
+    {% if is_draft %}<div class="draft-notice shell"><strong>Review before saving</strong><p>Click <b>Save work</b> to keep these records. Refreshing, leaving this review, starting another extraction, or clicking <b>Discard</b> removes this temporary extraction.</p></div>{% endif %}
+
+    {% if reactions %}
+    <form action="{% url 'save_reactions' job.id %}" method="post" id="reaction-review-form"{% if is_draft %} data-draft-resolution{% endif %}>
+        {% csrf_token %}
+        {% if draft_token %}<input type="hidden" name="draft_token" value="{{ draft_token }}">{% endif %}
+        <section class="extract-workbench">
+            <div class="source-pane workbench-pane">
+                <header class="pane-header"><div><span>01</span><strong>Source document</strong></div><small>PDF reference</small></header>
+                <div class="document-tabs" role="tablist" aria-label="Source documents">
+                    {% for doc in job.documents.all %}
+                    <button class="document-tab{% if forloop.first %} is-active{% endif %}" type="button" role="tab" data-document-url="{% url 'pdf_document' doc.id %}" data-text-url="{% url 'extracted_text_document' doc.id %}" data-document-id="{{ doc.id }}" data-document-name="{{ doc.original_name }}" data-page-count="{{ doc.page_count }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                        <b>{{ forloop.counter|stringformat:'02d' }}</b><span title="{{ doc.original_name }}">{{ doc.original_name }}</span>
+                    </button>
+                    {% endfor %}
+                </div>
+                {% with first_document=job.documents.all|first %}
+                <div class="pdf-canvas" id="pdf-canvas"><img class="pdf-viewer" id="pdf-viewer" alt="Rendered source PDF page" src="{% url 'pdf_page_image' first_document.id 1 %}"></div>
+                <footer class="pane-footer"><div class="pdf-page-controls"><button id="pdf-prev-page" type="button" aria-label="Previous PDF page">&lsaquo;</button><label>Page <input id="pdf-page-number" type="number" min="1" max="{{ first_document.page_count }}" value="1"> of <span id="pdf-page-count">{{ first_document.page_count }}</span></label><button id="pdf-next-page" type="button" aria-label="Next PDF page">&rsaquo;</button></div><span id="pdf-highlight-status">Click a field to highlight its extracted value.</span><a id="download-text-link" href="{% url 'extracted_text_document' first_document.id %}">Extracted text &darr;</a><a id="open-pdf-link" href="{% url 'pdf_document' first_document.id %}" target="_blank" rel="noopener">Original PDF &nearr;</a></footer>
+                {% endwith %}
+            </div>
+
+            <aside class="reaction-tree workbench-pane" aria-label="Extracted reaction tree">
+                <header class="pane-header"><div><span>02</span><strong>Reaction tree</strong></div><small>{{ display_reaction_count }} records</small></header>
+                <div class="tree-root"><span class="tree-toggle" aria-hidden="true">&minus;</span><b>Extracted reactions</b></div>
+                <ol class="tree-list">
+                    {% for reaction in reactions %}
+                    <li><button class="tree-node{% if forloop.first %} is-active{% endif %}" type="button" data-reaction-target="reaction-{{ reaction.form_key }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                        <span class="flask-icon" aria-hidden="true">&#9879;</span><span><b>RX-{{ reaction.display_id }}</b><small>{% if reaction.products %}{{ reaction.products.0 }}{% endif %}</small></span>
+                    </button></li>
+                    {% endfor %}
+                </ol>
+            </aside>
+
+            <div class="reaction-editor workbench-pane">
+                <header class="pane-header"><div><span>03</span><strong>Reaction fields</strong></div><button class="button button--primary button--compact" type="submit">{% if is_draft %}Save work{% else %}Save edits{% endif %}</button></header>
+                {% for reaction in reactions %}
+                <article class="reaction-panel{% if not forloop.first %} is-hidden{% endif %}" id="reaction-{{ reaction.form_key }}" data-reaction-panel>
+                    <div class="reaction-panel__title"><div><span>REACTION ID</span><h2>RX-{{ reaction.display_id }}</h2></div><span class="stage-chip">Stages: {{ reaction.reaction_stages }}</span></div>
+                    <div class="reaction-form-grid">
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='products' input_name='products' label='Products' value=reaction.products|lines metadata=reaction.field_evidence.products confidence=reaction.confidence_scores.products multiline=True individual_values=True %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='starting-materials' input_name='starting_materials' label='Starting materials' value=reaction.starting_materials|lines metadata=reaction.field_evidence.starting_materials confidence=reaction.confidence_scores.starting_materials multiline=True individual_values=True %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='reagents' input_name='reagents' label='Reagents' value=reaction.reagents|lines metadata=reaction.field_evidence.reagents confidence=reaction.confidence_scores.reagents multiline=True individual_values=True lookup_items=reaction.lookup_metadata.reagents lookup_kind='reagent' %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='catalysts' input_name='catalysts' label='Catalysts' value=reaction.catalysts|lines metadata=reaction.field_evidence.catalysts confidence=reaction.confidence_scores.catalysts multiline=True individual_values=True lookup_items=reaction.lookup_metadata.catalysts lookup_kind='catalyst' %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='solvents' input_name='solvents' label='Solvents' value=reaction.solvents|lines metadata=reaction.field_evidence.solvents confidence=reaction.confidence_scores.solvents multiline=True individual_values=True lookup_items=reaction.lookup_metadata.solvents lookup_kind='solvent' %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='time' input_name='reaction_time' label='Reaction time' value=reaction.reaction_time metadata=reaction.field_evidence.reaction_time confidence=reaction.confidence_scores.reaction_time %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='pressure' input_name='reaction_pressure' label='Reaction pressure' value=reaction.reaction_pressure metadata=reaction.field_evidence.reaction_pressure confidence=reaction.confidence_scores.reaction_pressure %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='temperature' input_name='reaction_temperature' label='Reaction temperature' value=reaction.reaction_temperature metadata=reaction.field_evidence.reaction_temperature confidence=reaction.confidence_scores.reaction_temperature %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='stages' input_name='reaction_stages' label='Number of reaction stages' value=reaction.reaction_stages metadata=reaction.field_evidence.reaction_stages confidence=reaction.confidence_scores.reaction_stages %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='description-type' input_name='reaction_description_type' label='Type of reaction description' value=reaction.reaction_description_type metadata=reaction.field_evidence.reaction_description_type confidence=reaction.confidence_scores.reaction_description_type %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='yield' input_name='reaction_yield' label='Yield' value=reaction.reaction_yield metadata=reaction.field_evidence.yield confidence=reaction.confidence_scores.yield %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='conditions' input_name='other_conditions' label='Other reaction conditions' value=reaction.other_conditions metadata=reaction.field_evidence.other_conditions confidence=reaction.confidence_scores.other_conditions multiline=True span_two=True lookup_items=reaction.lookup_metadata.reaction_conditions lookup_kind='condition' %}
+                        {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='notes' input_name='reviewer_notes' label='Reviewer notes' value=reaction.reviewer_notes multiline=True span_two=True reviewer=True %}
+                    </div>
+                    <div class="field-evidence-help">Select an extracted field to open its cited page and highlight the matching source words.</div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+    </form>
+    {% elif job.status == 'completed' %}<div class="empty-panel shell"><h2>No distinct reactions found</h2><p>The model did not identify a source-supported reaction in the selected PDF pages.</p></div>{% endif %}
+
+    {% if job.token_usages.all %}<details class="usage-panel shell"><summary>AI call usage details ({{ job.token_usages.all|length }} calls)</summary><div class="records-table-wrap"><table class="records-table"><thead><tr><th>Phase</th><th>Document</th><th>Chunk</th><th>Prompt</th><th>Completion</th><th>Total</th><th>Cost</th></tr></thead><tbody>{% for usage in job.token_usages.all %}<tr><td>{{ usage.get_phase_display }}</td><td>{{ usage.document.original_name|default:'All candidates' }}</td><td>{{ usage.chunk_number }}</td><td>{{ usage.prompt_tokens }}</td><td>{{ usage.completion_tokens }}</td><td>{{ usage.total_tokens }}</td><td>${{ usage.estimated_cost_usd }}</td></tr>{% endfor %}</tbody></table></div></details>{% endif %}
+</main>
+{% endblock %}

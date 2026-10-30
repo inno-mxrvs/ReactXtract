@@ -1,0 +1,31 @@
+{% load reactxtract %}
+<div class="copy-field{% if span_two %} span-2{% endif %}"
+     {% if not reviewer %}data-field-evidence{% endif %}
+     {% if individual_values %}data-individual-highlights{% endif %}
+     data-source-file="{{ metadata.source_file|default:'' }}"
+     data-page="{{ metadata.page|default:'' }}"
+     data-quote="{{ metadata.quote|default:'' }}"
+     data-bbox="{{ metadata.bbox.left }},{{ metadata.bbox.top }},{{ metadata.bbox.right }},{{ metadata.bbox.bottom }}">
+    <label for="reaction-{{ reaction_id }}-{{ field_name }}">{{ label }}</label>
+    {% if not reviewer %}<span class="confidence-badge confidence-badge--{{ confidence|confidence_class }}" title="AI source-support confidence">{{ confidence|confidence_percent }}%</span>{% endif %}
+    <button type="button" data-copy-target="reaction-{{ reaction_id }}-{{ field_name }}">Copy</button>
+    {% if multiline %}
+    <textarea id="reaction-{{ reaction_id }}-{{ field_name }}" name="reaction_{{ reaction_id }}_{{ input_name }}">{{ value }}</textarea>
+    {% else %}
+    <input id="reaction-{{ reaction_id }}-{{ field_name }}" name="reaction_{{ reaction_id }}_{{ input_name }}" type="text" value="{{ value }}">
+    {% endif %}
+    {% if individual_values %}<div class="field-value-highlights" data-value-highlights aria-label="Individual {{ label }} values"></div>{% endif %}
+    {% if lookup_kind %}
+    <div class="lookup-note">
+        <span>Optional local lookup</span>
+        {% if lookup_items %}
+            {% for item in lookup_items %}
+                {% if lookup_kind == 'condition' %}<b>{{ item.value }} <small>{{ item.lookup_type }} {{ item.code }}</small></b>
+                {% elif item.matched %}<b>{{ item.value }} <small>{{ item.lookup_type }} {{ item.code }}</small></b>
+                {% else %}<em>{{ item.input }} — not listed, retained</em>{% endif %}
+            {% endfor %}
+        {% else %}<em>No lookup match; extracted value remains valid.</em>{% endif %}
+    </div>
+    {% endif %}
+    {% if not reviewer %}<div class="field-source"><span>Source</span><b>{% if metadata.source_file %}{{ metadata.source_file }}{% if metadata.page %} · p. {{ metadata.page }}{% endif %}{% else %}—{% endif %}</b></div>{% endif %}
+</div>

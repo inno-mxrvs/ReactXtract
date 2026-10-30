@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% load reactxtract %}
+{% block title %}Saved records | ReactXtract{% endblock %}
+{% block content %}
+<main class="page shell">
+    <div class="page-header">
+        <div><div class="eyebrow">EXTRACTION LIBRARY</div><h1>Saved records</h1><p>Search past literature sets, inspect hybrid AI extraction and token usage, or export all reaction rows.</p></div>
+        <a class="button button--primary" href="{% url 'export_all_csv' %}">Export all CSV</a>
+    </div>
+    <form class="filter-bar" method="get">
+        <label><span>Search</span><input class="text-input" name="q" type="search" value="{{ query }}" placeholder="Title or source filename"></label>
+        <label><span>Status</span><select class="text-input" name="status"><option value="">All statuses</option><option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option><option value="failed" {% if status == 'failed' %}selected{% endif %}>Failed</option></select></label>
+        <button class="button button--secondary" type="submit">Filter</button>
+        {% if query or status %}<a class="button button--ghost" href="{% url 'records' %}">Clear</a>{% endif %}
+    </form>
+    <div class="records-table-wrap">
+        <table class="records-table">
+            <thead><tr><th>Literature set</th><th>Documents</th><th>Status</th><th>Reactions</th><th>Tokens</th><th>Est. cost</th><th>Processing time</th><th>Saved at</th><th>Created</th></tr></thead>
+            <tbody>
+            {% for job in jobs %}
+                <tr>
+                    <td><a href="{% url 'job_detail' job.id %}"><strong>{{ job.title }}</strong><small>{{ job.id }}</small></a></td>
+                    <td>{% for doc in job.documents.all %}<span class="filename">{{ doc.original_name }}</span>{% endfor %}</td>
+                    <td><span class="status status--{{ job.status }}">{{ job.get_status_display }}</span></td>
+                    <td>{{ job.reaction_count }}</td><td>{{ job.total_tokens }}</td><td>${{ job.estimated_cost_usd }}</td><td>{{ job.processing_duration_ms|duration_ms }}</td><td>{% if job.completed_at %}{{ job.completed_at|date:'M j, Y · g:i:s A' }}{% else %}—{% endif %}</td><td>{{ job.created_at|date:'M j, Y · g:i A' }}</td>
+                </tr>
+            {% empty %}
+                <tr><td class="empty-cell" colspan="9">No extraction records match these filters.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+{% endblock %}
+

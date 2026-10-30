@@ -1,0 +1,112 @@
+As a professional chemist, analyze the provided chemical reaction literature and extract information only from the supplied article and supporting information.
+ 
+For each distinct reaction, identify:
+1. Products
+2. Starting materials
+3. Reagents
+4. Catalysts
+5. Solvents
+6. Reaction time
+7. Reaction pressure
+8. Other reaction conditions
+9. Number of reaction stages
+ 
+## Original Rules
+
+- Do not infer information that is not explicitly supported by the source.
+- Distinguish starting materials from reagents based on their role in the
+  transformation and their incorporation into the product.
+- Identify catalysts separately from reagents.
+- Identify all solvents used in the reaction.
+- Report reaction time exactly as stated and preserve the original units.
+- Report reaction pressure only when stated or unambiguously specified.
+- Include temperature, atmosphere, irradiation, microwave conditions,
+  electrochemical conditions, concentration, equivalents, catalyst loading,
+  and other relevant experimental conditions under "Other reaction conditions."
+- Count sequential chemical transformations as separate reaction stages.
+- Do not count work-up, extraction, filtration, evaporation, or purification
+  as reaction stages.
+- If information is unavailable, leave the field empty. Return an empty array
+  for unavailable list fields and an empty string for unavailable scalar fields.
+- Do not infer missing values from similar reactions, general chemical knowledge,
+  or other publications.
+- If the article contains multiple distinct reactions, create a separate
+  reaction record for each.
+- Preserve the source wording for chemical names where possible.
+- Preserve chemical typography in extracted field values. Use Unicode subscript
+  digits for molecular-formula indices (for example H₂O, Na₂SO₄, CH₂Cl₂,
+  and CuSO₄·5H₂O) and Unicode superscripts for explicitly shown charges or
+  isotopes. Do not turn locants, compound identifiers, quantities, times, page
+  numbers, or temperatures into subscripts (for example keep 1,2-dichloro,
+  compound 3a, 20 mL, 24 h, and 80 °C unchanged).
+
+## Additional Rules
+
+- Search every supplied source type for reactions: graphical abstracts,
+  numbered and unnumbered schemes, reaction-condition tables, optimization
+  tables, substrate-scope tables, narrative results, experimental sections,
+  general procedures, representative procedures, and supporting information.
+- Extract preparative reactions that produce intermediates as well as reactions
+  that produce final target compounds. Do not limit extraction to the paper's
+  headline or biologically tested products.
+- Treat each product-forming scheme arrow or explicitly described transformation
+  as a reaction. When an arrow bundles sequential transformations without an
+  isolated intermediate, keep it as one record and report the stated number of
+  stages. When distinct intermediates or products are shown, create separate
+  records for the distinct transformations.
+- When a source explicitly states that several labeled compounds were prepared
+  by a general or representative procedure, create a separate record for every
+  labeled compound. Apply the shared procedure only where the source explicitly
+  links that example or compound series to it, and preserve product-specific
+  yields or conditions.
+- In reaction-scope or optimization tables, create separate records for distinct
+  successful product-forming entries when each entry has its own substrates,
+  conditions, or outcome. Do not create reaction records for entries explicitly
+  reported as failed, trace, or no reaction.
+- Scheme-only reactions are valid evidence. Use source labels such as
+  "compound 12" when a chemical name is unavailable; never invent a name from
+  a drawn structure.
+- Do not misclassify retrosynthetic arrows, proposed mechanisms, biological
+  assays, docking experiments, formulation steps, analytical measurements, or
+  work-up and purification operations as preparative reactions.
+- Before returning, re-scan all supplied pages and compare every scheme arrow,
+  procedure heading, intermediate label, and product label against the output.
+  Add any supported reaction that is missing, without duplicating the same
+  transformation described in multiple places.
+
+### Per-Reaction Role Check
+
+Before returning each reaction record, validate the role of every listed
+chemical against that specific transformation and its cited source evidence:
+
+- Product: include only a substance explicitly formed, obtained, afforded,
+  isolated, or shown at the product end of the applicable reaction arrow. Do
+  not treat a compound as a product merely because it is discussed, tested, or
+  characterized elsewhere.
+- Starting material: include only a reactant present before the transformation
+  that is explicitly consumed or incorporated into the reported product. Do
+  not infer incorporation solely from general chemical knowledge.
+- Reagent: include a substance used to cause or enable the transformation that
+  is not functioning as the catalyst, reaction solvent, starting material, or
+  product. Exclude quenching agents, extraction liquids, washes, drying agents,
+  chromatography eluents, and recrystallization solvents unless the source
+  explicitly uses them during the reaction itself.
+- Catalyst: include a substance only when the source identifies it as a
+  catalyst or explicitly reports catalytic loading or use. Do not infer a
+  catalytic role from chemical plausibility alone.
+- Solvent: include only the reaction medium. Exclude solvents used solely for
+  work-up, extraction, washing, drying, chromatography, or recrystallization.
+- Do not duplicate a chemical across role lists unless the source explicitly
+  supports a genuine dual role in that reaction.
+- For every populated role field, confirm that its evidence quote supports both
+  the chemical identity and its assigned role in this reaction. If the identity
+  is reported but the role is ambiguous, do not guess the category. If no
+  supported chemicals remain for a role, return an empty array for that field
+  and set its confidence to 0.
+- Field confidence must reflect confidence in both the extracted value and the
+  assigned role. The mere presence of a chemical name on the page is not enough
+  for a high confidence score.
+
+## Page-Selection Keywords
+
+keywords: Experiments, Experimental Procedure, Reaction Schemes, Reaction Mechanism, Synthesis Procedure, Experimental Section, Synthesis, General Procedure, Experimental Methods, Methodology, Materials and Methods, Synthetic Methodology, Preparation of, Synthesis of, Representative Procedure, Representative Example, Representative Synthesis, Reagents and Conditions, Reaction Scope, Substrate Scope, Optimization, Optimized Process, Synthetic Route, General Experimental, Experimental Details, Procedure for, Characterization Data, Scheme

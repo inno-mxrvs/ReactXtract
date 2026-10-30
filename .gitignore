@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+.env
+.venv/
+venv/
+media/uploads/
+server/staticfiles/
+.pytest_cache/
+Sample Input Files/
