@@ -4,6 +4,8 @@ ReactXtract is a Django application for extracting structured chemical reaction 
 
 For detailed Windows installation, configuration, operation, update, and troubleshooting instructions, see [USER_GUIDE.md](USER_GUIDE.md).
 
+For field-level human evaluation, use [ReactXtract_Field_Confidence_Accuracy_Template.xlsx](ReactXtract_Field_Confidence_Accuracy_Template.xlsx).
+
 ## Pipeline
 
 1. Upload one or more article/supporting-information PDFs.
@@ -17,7 +19,7 @@ Saved jobs, source-document references, token usage, and estimated cost remain a
 
 Processing and temporary-review jobs are never shown in Saved records. Leaving for Records, home, or another extraction requests cooperative cancellation of active AI work; after the current API call returns, the job, usage rows, document rows, uploaded PDFs, and generated text files are deleted. Interrupted processing jobs are removed by stale-job cleanup.
 
-The processing overlay shows a live elapsed timer. The exact server-side extraction duration is stored in milliseconds on the job, while `completed_at` records when the reviewer clicks **Save work** and the reactions are committed to SQLite. Both values are displayed in Saved records and included in job exports.
+The processing overlay shows a live elapsed timer. ReactXtract stores the AI/local extraction duration separately from the end-to-end duration measured from job creation until the reviewer clicks **Save work**. `completed_at` records when the reactions are committed to SQLite. Extraction time, total time to save, and the saved timestamp are displayed in Saved records and included in job exports.
 
 Consolidation is evidence-preserving: AI can only classify an ambiguous pair and cannot rewrite a reaction. Confirmed merges are performed locally, and every selected value keeps the confidence, quote, source page, and bounding box returned with that original extracted value. AI-confirmed matches below the conservative 90% threshold remain separate.
 
@@ -33,7 +35,7 @@ The review workspace uses PyMuPDF to render cited pages and highlight the words 
 
 ## Setup (Windows PowerShell)
 
-For automatic Windows setup, double-click `setup.cmd`. It creates `.venv`, installs `requirements.txt`, and copies `.env.example` to `.env` when needed. Configure the API credentials in `.env`, then double-click `runserver.cmd`; it applies migrations, checks Django, and starts the app at `http://127.0.0.1:8000/`.
+For automatic Windows setup, double-click `setup.cmd`. It creates `.venv`, installs `requirements.txt`, and creates a placeholder `.env` when needed. Replace that file with the approved `.env` received through Teams, then double-click `runserver.cmd`; it applies migrations, checks Django, and starts the app at `http://127.0.0.1:8000/`.
 
 The equivalent manual commands are:
 

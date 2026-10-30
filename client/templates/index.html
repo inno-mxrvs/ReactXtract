@@ -55,7 +55,7 @@
             <a class="job-card" href="{% url 'job_detail' job.id %}">
                 <div><span class="status status--{{ job.status }}">{{ job.get_status_display }}</span><time>{{ job.created_at|date:'M j, Y · g:i A' }}</time></div>
                 <h3>{{ job.title }}</h3>
-                <p>{{ job.reaction_count }} reaction{{ job.reaction_count|pluralize }} · {{ job.total_tokens }} tokens · ${{ job.estimated_cost_usd }} · {{ job.processing_duration_ms|duration_ms }}</p>
+                <p>{{ job.reaction_count }} reaction{{ job.reaction_count|pluralize }} · {{ job.total_tokens }} tokens · ${{ job.estimated_cost_usd }} · total {{ job.total_duration_ms|duration_ms }}</p>
             </a>
             {% endfor %}
         </div>

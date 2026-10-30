@@ -159,6 +159,8 @@ class ReactXtractViewsTests(TestCase):
         self.assertEqual(job.status, ExtractionJob.Status.COMPLETED)
         self.assertEqual(job.reaction_count, 1)
         self.assertIsNotNone(job.completed_at)
+        self.assertGreater(job.total_duration_ms, 0)
+        self.assertGreaterEqual(job.total_duration_ms, job.processing_duration_ms)
         reaction = job.reactions.get()
         self.assertEqual(reaction.products, ['Reviewed Product A'])
         self.assertEqual(reaction.reaction_pressure, '')
@@ -169,7 +171,8 @@ class ReactXtractViewsTests(TestCase):
         self.assertContains(detail_response, 'RX-0001')
         self.assertContains(detail_response, 'data-field-evidence')
         self.assertContains(detail_response, '91%')
-        self.assertContains(detail_response, 'Processed in')
+        self.assertContains(detail_response, 'Extraction')
+        self.assertContains(detail_response, 'Total to save')
         self.assertContains(detail_response, 'Saved')
         self.assertNotContains(detail_response, 'data-unsaved-review')
 
@@ -374,7 +377,8 @@ class ReactXtractViewsTests(TestCase):
             model_name='test-model', total_prompt_tokens=100,
             total_completion_tokens=25, total_tokens=125,
             estimated_cost_usd=Decimal('0.000400'),
-            processing_duration_ms=65432, completed_at=timezone.now(),
+            processing_duration_ms=65432, total_duration_ms=125432,
+            completed_at=timezone.now(),
         )
         Reaction.objects.create(
             job=job, reaction_number=1, products=['P'], starting_materials=['S'],
@@ -390,7 +394,8 @@ class ReactXtractViewsTests(TestCase):
 
         csv_response = self.client.get(reverse('export_job_csv', args=[job.id]))
         self.assertContains(csv_response, 'Products confidence')
-        self.assertContains(csv_response, 'Processing duration ms')
+        self.assertContains(csv_response, 'Extraction processing duration ms')
+        self.assertContains(csv_response, 'Total duration until save ms')
         self.assertContains(csv_response, 'Saved at')
         self.assertContains(csv_response, 'Reagent lookup matches')
         self.assertContains(csv_response, 'Catalyst lookup matches')
@@ -402,6 +407,7 @@ class ReactXtractViewsTests(TestCase):
         json_response = self.client.get(reverse('export_job_json', args=[job.id])).json()
         self.assertEqual(json_response['job']['token_usage']['total_tokens'], 125)
         self.assertEqual(json_response['job']['processing_duration_ms'], 65432)
+        self.assertEqual(json_response['job']['total_duration_ms'], 125432)
         self.assertIsNotNone(json_response['job']['saved_at'])
         self.assertEqual(json_response['reactions'][0]['confidence_scores']['products'], 0.88)
         self.assertEqual(json_response['reactions'][0]['field_evidence']['products']['page'], '1')
@@ -410,6 +416,8 @@ class ReactXtractViewsTests(TestCase):
 
         records_response = self.client.get(reverse('records'))
         self.assertContains(records_response, '1m 5s')
+        self.assertContains(records_response, '2m 5s')
+        self.assertContains(records_response, 'Total to save')
         self.assertContains(records_response, 'Saved at')
 
 

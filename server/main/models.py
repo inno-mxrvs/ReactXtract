@@ -21,6 +21,7 @@ class ExtractionJob(models.Model):
     total_tokens = models.PositiveIntegerField(default=0)
     estimated_cost_usd = models.DecimalField(max_digits=14, decimal_places=6, default=0)
     processing_duration_ms = models.PositiveBigIntegerField(default=0)
+    total_duration_ms = models.PositiveBigIntegerField(default=0)
     discard_requested = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)

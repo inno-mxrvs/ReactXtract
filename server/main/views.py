@@ -204,8 +204,16 @@ def extract_documents(request):
             job.total_completion_tokens = totals['completion'] or 0
             job.total_tokens = totals['total'] or 0
             job.estimated_cost_usd = totals['cost'] or 0
-            job.completed_at = timezone.now() if job.status != ExtractionJob.Status.DRAFT else None
             job.processing_duration_ms = round((time.perf_counter() - started) * 1000)
+            if job.status != ExtractionJob.Status.DRAFT:
+                job.completed_at = timezone.now()
+                job.total_duration_ms = max(
+                    0,
+                    round((job.completed_at - job.created_at).total_seconds() * 1000),
+                )
+            else:
+                job.completed_at = None
+                job.total_duration_ms = 0
             job.save()
 
     if discarded:
@@ -333,7 +341,13 @@ def save_reactions(request, job_id):
             job.status = ExtractionJob.Status.COMPLETED
             job.reaction_count = len(draft_reactions)
             job.completed_at = timezone.now()
-            job.save(update_fields=['status', 'reaction_count', 'completed_at'])
+            job.total_duration_ms = max(
+                0,
+                round((job.completed_at - job.created_at).total_seconds() * 1000),
+            )
+            job.save(update_fields=[
+                'status', 'reaction_count', 'completed_at', 'total_duration_ms',
+            ])
         messages.success(request, f'Saved {len(draft_reactions)} reaction record(s).')
         return redirect('job_detail', job_id=job.id)
 
@@ -367,6 +381,7 @@ def _reaction_row(reaction):
         reaction.job.model_name, reaction.job.total_prompt_tokens,
         reaction.job.total_completion_tokens, reaction.job.total_tokens,
         reaction.job.estimated_cost_usd, reaction.job.processing_duration_ms,
+        reaction.job.total_duration_ms,
         reaction.job.completed_at.isoformat() if reaction.job.completed_at else '',
         ' | '.join(reaction.products), reaction.confidence_scores.get('products', 0),
         ' | '.join(reaction.starting_materials), reaction.confidence_scores.get('starting_materials', 0),
@@ -391,7 +406,7 @@ def _reaction_row(reaction):
 CSV_HEADERS = [
     'Job ID', 'Job title', 'Reaction number', 'Model/deployment', 'Job prompt tokens',
     'Job completion tokens', 'Job total tokens', 'Job estimated cost USD',
-    'Processing duration ms', 'Saved at',
+    'Extraction processing duration ms', 'Total duration until save ms', 'Saved at',
     'Products', 'Products confidence', 'Starting materials', 'Starting materials confidence',
     'Reagents', 'Reagents confidence', 'Catalysts', 'Catalysts confidence',
     'Solvents', 'Solvents confidence', 'Reaction time', 'Reaction time confidence',
@@ -450,6 +465,7 @@ def export_job_json(request, job_id):
             'id': str(job.id), 'title': job.title, 'status': job.status,
             'model': job.model_name, 'reaction_count': job.reaction_count,
             'processing_duration_ms': job.processing_duration_ms,
+            'total_duration_ms': job.total_duration_ms,
             'created_at': job.created_at.isoformat(),
             'saved_at': job.completed_at.isoformat() if job.completed_at else None,
             'token_usage': {

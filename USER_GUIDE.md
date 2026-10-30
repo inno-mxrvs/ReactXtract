@@ -140,17 +140,50 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 This changes the execution policy only for the current PowerShell window.
 
-## 6. Configure the `.env` File
+## 6. Place the Approved `.env` File from Teams
 
-After setup, open `.env` in Notepad or a code editor.
+The project team will send users an approved `.env` file through a Teams message. This file contains the POC configuration required to connect ReactXtract to the approved AI service.
+
+After `setup.cmd` finishes:
+
+1. Open the approved Teams message.
+2. Download the attached `.env` file.
+3. Open the cloned ReactXtract folder—the folder containing `setup.cmd` and `runserver.cmd`.
+4. Copy and paste the downloaded `.env` file directly into that folder.
+5. Select **Replace the file in the destination** if Windows reports that `.env` already exists. The existing file was only created from `.env.example` during setup.
+6. Confirm that the filename is exactly `.env`, not `.env.txt`, `.env (1)`, or `env`.
+
+If Windows hides file extensions, enable **View > Show > File name extensions** in File Explorer before checking the name.
+
+Do not copy the `.env` file into `.venv`, `server`, or `client`. Its correct location is the ReactXtract repository root:
+
+```text
+ReactXtract\
+├── .env
+├── setup.cmd
+├── runserver.cmd
+├── requirements.txt
+├── client\
+└── server\
+```
+
+Never commit `.env` to GitHub, forward it to unauthorized people, attach it to another email, or disclose its API keys. The repository already excludes `.env` from Git tracking.
+
+### 6.1 Verify the file
+
+The file can be opened in Notepad to confirm that it contains configuration entries:
 
 ```powershell
 notepad .env
 ```
 
-Never commit `.env` to GitHub, attach it to an email, place it in a shared folder, or disclose its API keys. The repository already excludes `.env` from Git tracking.
+Do not change the values supplied by the project team unless instructed. Close Notepad without saving if no change is required.
 
-### 6.1 Common local settings
+### 6.2 Manual configuration reference
+
+The remaining examples in this section are for project administrators or troubleshooting only. Normal users should use the approved Teams `.env` file.
+
+#### Common local settings
 
 For local POC use:
 
@@ -168,7 +201,7 @@ To generate a random Django secret after setup:
 
 Copy the generated value to `DJANGO_SECRET_KEY`.
 
-### 6.2 Standard OpenAI configuration
+#### Standard OpenAI configuration
 
 Use this configuration when calling the OpenAI API directly:
 
@@ -187,7 +220,7 @@ Important:
 - The selected model must support the Responses API, structured JSON output, and the required PDF/image inputs.
 - The API account is responsible for usage charges.
 
-### 6.3 Azure OpenAI configuration
+#### Azure OpenAI configuration
 
 Use this configuration when the organization provides Azure OpenAI:
 
@@ -207,7 +240,7 @@ Important:
 - Confirm that the deployment supports the Responses API and the required structured and visual inputs.
 - When `AZURE_OPENAI_ENDPOINT` contains a value, ReactXtract uses Azure OpenAI instead of standard OpenAI.
 
-### 6.4 Extraction settings
+#### Extraction settings
 
 The recommended POC defaults are:
 
@@ -223,7 +256,7 @@ Input modes:
 - `text` — sends native PDF text and detected tables without visual PDF pages
 - `vision` — uses PDF visual input more extensively and may take longer or cost more
 
-### 6.5 Token-cost settings
+#### Token-cost settings
 
 Configure these values for the selected model or deployment:
 
@@ -300,7 +333,22 @@ Available exports include:
 - Token-cost CSV
 - Export-all CSV
 
-Saved records include extraction values, confidence scores, source evidence, lookup matches, processing time, token usage, and estimated cost.
+Saved records include extraction values, confidence scores, source evidence, lookup matches, token usage, estimated cost, AI/local extraction time, and total time from job creation until the reviewer selected **Save work**.
+
+### 10.1 Human confidence and accuracy review workbook
+
+Use `ReactXtract_Field_Confidence_Accuracy_Template.xlsx` when conducting a formal human review of extracted fields.
+
+1. Open the workbook and read the **Instructions** sheet.
+2. Use one row on **Accuracy Review** for each reaction.
+3. Paste each extracted value and its AI confidence score from ReactXtract.
+4. Enter **Human Accuracy** from 0% to 100% for every reviewed field.
+5. Use 100% for a fully correct field, 0% for an incorrect field, or an intermediate percentage for a partially correct field.
+6. Leave Human Accuracy blank when the field was not reviewed or is not applicable.
+7. Record corrections or explanations under **Reviewer Comments**.
+8. Save a separate working copy named for the literature set and reviewer.
+
+The workbook includes all 12 extraction fields, input validation, color-coded confidence and accuracy cells, and automatic averages per reaction.
 
 ## 11. Local Files and Data
 

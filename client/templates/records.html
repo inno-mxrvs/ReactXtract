@@ -15,17 +15,17 @@
     </form>
     <div class="records-table-wrap">
         <table class="records-table">
-            <thead><tr><th>Literature set</th><th>Documents</th><th>Status</th><th>Reactions</th><th>Tokens</th><th>Est. cost</th><th>Processing time</th><th>Saved at</th><th>Created</th></tr></thead>
+            <thead><tr><th>Literature set</th><th>Documents</th><th>Status</th><th>Reactions</th><th>Tokens</th><th>Est. cost</th><th>Extraction time</th><th>Total processing time</th><th>Saved at</th><th>Created</th></tr></thead>
             <tbody>
             {% for job in jobs %}
                 <tr>
                     <td><a href="{% url 'job_detail' job.id %}"><strong>{{ job.title }}</strong><small>{{ job.id }}</small></a></td>
                     <td>{% for doc in job.documents.all %}<span class="filename">{{ doc.original_name }}</span>{% endfor %}</td>
                     <td><span class="status status--{{ job.status }}">{{ job.get_status_display }}</span></td>
-                    <td>{{ job.reaction_count }}</td><td>{{ job.total_tokens }}</td><td>${{ job.estimated_cost_usd }}</td><td>{{ job.processing_duration_ms|duration_ms }}</td><td>{% if job.completed_at %}{{ job.completed_at|date:'M j, Y · g:i:s A' }}{% else %}—{% endif %}</td><td>{{ job.created_at|date:'M j, Y · g:i A' }}</td>
+                    <td>{{ job.reaction_count }}</td><td>{{ job.total_tokens }}</td><td>${{ job.estimated_cost_usd }}</td><td>{{ job.processing_duration_ms|duration_ms }}</td><td>{{ job.total_duration_ms|duration_ms }}</td><td>{% if job.completed_at %}{{ job.completed_at|date:'M j, Y · g:i:s A' }}{% else %}—{% endif %}</td><td>{{ job.created_at|date:'M j, Y · g:i A' }}</td>
                 </tr>
             {% empty %}
-                <tr><td class="empty-cell" colspan="9">No extraction records match these filters.</td></tr>
+                <tr><td class="empty-cell" colspan="10">No extraction records match these filters.</td></tr>
             {% endfor %}
             </tbody>
         </table>

@@ -11,7 +11,8 @@
         <div class="extract-toolbar__meta">
             <span class="status status--{{ job.status }}">{{ job.get_status_display }}</span>
             <span>{{ display_reaction_count }} reactions</span><span>{{ job.total_tokens }} tokens</span><span>${{ job.estimated_cost_usd }}</span>
-            <span title="Extraction processing duration">Processed in {{ job.processing_duration_ms|duration_ms }}</span>
+            <span title="AI extraction and local processing duration">Extraction {{ job.processing_duration_ms|duration_ms }}</span>
+            {% if job.completed_at %}<span title="Time from job creation until Save work">Total to save {{ job.total_duration_ms|duration_ms }}</span>{% endif %}
             {% if job.completed_at %}<span title="Time saved to the database">Saved {{ job.completed_at|date:'M j, Y · g:i:s A' }}</span>{% endif %}
         </div>
         <div class="actions">

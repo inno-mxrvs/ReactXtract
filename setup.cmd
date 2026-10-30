@@ -37,7 +37,7 @@ if not exist ".env" (
     if exist ".env.example" (
         copy /Y ".env.example" ".env" >nul
         echo Created .env from .env.example.
-        echo Add the OpenAI or Azure OpenAI credentials before running extraction.
+        echo Replace it with the approved .env file sent through Teams.
     ) else (
         echo WARNING: .env.example was not found. Create .env manually.
     )
@@ -48,6 +48,7 @@ if not exist ".env" (
 echo.
 echo ========================================
 echo Setup completed successfully.
+echo Paste the approved .env file from Teams into this folder.
 echo Run runserver.cmd to start ReactXtract.
 echo ========================================
 echo.
