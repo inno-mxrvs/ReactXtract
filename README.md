@@ -2,6 +2,8 @@
 
 ReactXtract is a Django application for extracting structured chemical reaction data from literature PDFs. It follows the same server-rendered Django/client-static setup as `Returned-Mail-AI-Web-App`, adapted to this project's chemistry requirements.
 
+For detailed Windows installation, configuration, operation, update, and troubleshooting instructions, see [USER_GUIDE.md](USER_GUIDE.md).
+
 ## Pipeline
 
 1. Upload one or more article/supporting-information PDFs.
@@ -30,6 +32,10 @@ Extracted field values preserve chemical typography with Unicode subscripts (for
 The review workspace uses PyMuPDF to render cited pages and highlight the words matching the selected extracted field. List fields show one clickable **Highlight value** chip per product, starting material, reagent, catalyst, or solvent, allowing a reviewer to highlight one value instead of the complete field. These chips update as the reviewer edits a field. Evidence quotes anchor the correct passage, Unicode chemical subscripts are normalized to the PDF text layer for matching, and the stored bounding box is used only when textual matching is unavailable. The original PDF remains available from the viewer footer.
 
 ## Setup (Windows PowerShell)
+
+For automatic Windows setup, double-click `setup.cmd`. It creates `.venv`, installs `requirements.txt`, and copies `.env.example` to `.env` when needed. Configure the API credentials in `.env`, then double-click `runserver.cmd`; it applies migrations, checks Django, and starts the app at `http://127.0.0.1:8000/`.
+
+The equivalent manual commands are:
 
 ```powershell
 py -m venv .venv
