@@ -448,11 +448,11 @@ def export_usage_csv(request, job_id):
     response['Content-Disposition'] = f'attachment; filename="reactxtract-{job.id}-token-usage.csv"'
     response.write('\ufeff')
     writer = csv.writer(response)
-    writer.writerow(['Phase', 'Document', 'Chunk', 'Model/deployment', 'Prompt tokens', 'Completion tokens', 'Total tokens', 'Estimated cost USD', 'Created'])
+    writer.writerow(['Phase', 'Document', 'Chunk', 'Model/deployment', 'API duration ms', 'Prompt tokens', 'Completion tokens', 'Total tokens', 'Estimated cost USD', 'Created'])
     for usage in job.token_usages.select_related('document'):
         writer.writerow([
             usage.get_phase_display(), usage.document.original_name if usage.document else 'All candidates',
-            usage.chunk_number, usage.model_name, usage.prompt_tokens, usage.completion_tokens,
+            usage.chunk_number, usage.model_name, usage.duration_ms, usage.prompt_tokens, usage.completion_tokens,
             usage.total_tokens, usage.estimated_cost_usd, usage.created_at.isoformat(),
         ])
     return response
@@ -519,6 +519,7 @@ def export_job_json(request, job_id):
                 'document': item.document.original_name if item.document else None,
                 'chunk_number': item.chunk_number,
                 'model': item.model_name,
+                'duration_ms': item.duration_ms,
                 'prompt_tokens': item.prompt_tokens,
                 'completion_tokens': item.completion_tokens,
                 'total_tokens': item.total_tokens,

@@ -3,6 +3,7 @@ import tempfile
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import fitz
@@ -21,6 +22,8 @@ from .services import (
     REACTION_FIELDS,
     REACTION_SCHEMA,
     _format_reaction_chemical_typography,
+    _reasoning_options,
+    adaptive_chunk_page_numbers,
     build_native_page_context,
     chunk_page_numbers,
     consolidate_reactions,
@@ -380,6 +383,13 @@ class ReactXtractViewsTests(TestCase):
             processing_duration_ms=65432, total_duration_ms=125432,
             completed_at=timezone.now(),
         )
+        SourceDocument.objects.create(
+            job=job,
+            original_name='source.pdf',
+            file=SimpleUploadedFile('source.pdf', make_pdf(['P was isolated.']), content_type='application/pdf'),
+            page_count=1,
+            selected_pages=[1],
+        )
         Reaction.objects.create(
             job=job, reaction_number=1, products=['P'], starting_materials=['S'],
             reagents=['R'], catalysts=['C'], solvents=['water'],
@@ -389,7 +399,7 @@ class ReactXtractViewsTests(TestCase):
         AITokenUsage.objects.create(
             job=job, phase=AITokenUsage.Phase.EXTRACTION, model_name='test-model',
             prompt_tokens=100, completion_tokens=25, total_tokens=125,
-            estimated_cost_usd=Decimal('0.000400'),
+            estimated_cost_usd=Decimal('0.000400'), duration_ms=45678,
         )
 
         csv_response = self.client.get(reverse('export_job_csv', args=[job.id]))
@@ -399,6 +409,10 @@ class ReactXtractViewsTests(TestCase):
         self.assertContains(csv_response, 'Saved at')
         self.assertContains(csv_response, 'Reagent lookup matches')
         self.assertContains(csv_response, 'Catalyst lookup matches')
+
+        usage_csv_response = self.client.get(reverse('export_usage_csv', args=[job.id]))
+        self.assertContains(usage_csv_response, 'API duration ms')
+        self.assertContains(usage_csv_response, '45678')
         self.assertContains(csv_response, 'Solvent lookup matches')
         self.assertContains(csv_response, '0.88')
         self.assertContains(csv_response, '0.000400')
@@ -408,6 +422,7 @@ class ReactXtractViewsTests(TestCase):
         self.assertEqual(json_response['job']['token_usage']['total_tokens'], 125)
         self.assertEqual(json_response['job']['processing_duration_ms'], 65432)
         self.assertEqual(json_response['job']['total_duration_ms'], 125432)
+        self.assertEqual(json_response['ai_calls'][0]['duration_ms'], 45678)
         self.assertIsNotNone(json_response['job']['saved_at'])
         self.assertEqual(json_response['reactions'][0]['confidence_scores']['products'], 0.88)
         self.assertEqual(json_response['reactions'][0]['field_evidence']['products']['page'], '1')
@@ -417,8 +432,12 @@ class ReactXtractViewsTests(TestCase):
         records_response = self.client.get(reverse('records'))
         self.assertContains(records_response, '1m 5s')
         self.assertContains(records_response, '2m 5s')
-        self.assertContains(records_response, 'Total to save')
+        self.assertContains(records_response, 'Total processing time')
         self.assertContains(records_response, 'Saved at')
+
+        detail_response = self.client.get(reverse('job_detail', args=[job.id]))
+        self.assertContains(detail_response, 'API time')
+        self.assertContains(detail_response, '45.7s')
 
 
 class ChunkingTests(TestCase):
@@ -435,6 +454,69 @@ class ChunkingTests(TestCase):
 
     def test_page_chunker_preserves_page_order(self):
         self.assertEqual(chunk_page_numbers([0, 1, 4, 7, 8], max_pages=2), [[0, 1], [4, 7], [8]])
+
+    @override_settings(AI_ADAPTIVE_CHUNKING=True)
+    def test_adaptive_chunker_keeps_small_contiguous_selection_in_one_call(self):
+        pages = ['Experimental text ' * 20 for _ in range(4)]
+        self.assertEqual(
+            adaptive_chunk_page_numbers([0, 1, 2, 3], pages, max_pages=10),
+            [[0, 1, 2, 3]],
+        )
+
+    @override_settings(AI_ADAPTIVE_CHUNKING=True)
+    def test_adaptive_chunker_never_combines_discontinuous_page_runs(self):
+        pages = ['Reaction text' for _ in range(6)]
+        self.assertEqual(
+            adaptive_chunk_page_numbers([0, 1, 4, 5], pages, max_pages=10),
+            [[0, 1], [4, 5]],
+        )
+
+    @override_settings(AI_ADAPTIVE_CHUNKING=True)
+    def test_adaptive_chunker_uses_character_budget_for_large_selection(self):
+        pages = ['x' * 700 for _ in range(4)]
+        self.assertEqual(
+            adaptive_chunk_page_numbers(
+                [0, 1, 2, 3],
+                pages,
+                max_pages=10,
+                single_call_max_chars=1000,
+                chunk_max_chars=1400,
+                overlap_pages=0,
+            ),
+            [[0, 1], [2, 3]],
+        )
+
+    @override_settings(AI_ADAPTIVE_CHUNKING=True)
+    def test_adaptive_chunker_overlaps_only_size_limited_boundaries(self):
+        pages = ['Reaction text' for _ in range(4)]
+        self.assertEqual(
+            adaptive_chunk_page_numbers(
+                [0, 1, 2, 3],
+                pages,
+                max_pages=10,
+                single_call_max_pages=2,
+                overlap_pages=1,
+            ),
+            [[0, 1], [1, 2], [2, 3]],
+        )
+
+    @override_settings(AI_ADAPTIVE_CHUNKING=True)
+    def test_adaptive_chunker_starts_new_chunk_at_clear_reaction_section(self):
+        pages = [
+            'Background and design.',
+            'Scheme discussion continued.',
+            '3.1 Synthesis of the Compounds\nExperimental procedure.',
+            'Compound examples and yields.',
+        ]
+        self.assertEqual(
+            adaptive_chunk_page_numbers(
+                [0, 1, 2, 3],
+                pages,
+                max_pages=10,
+                single_call_max_pages=2,
+            ),
+            [[0, 1], [2, 3]],
+        )
 
     def test_scheme_and_conditions_are_selected_without_section_keyword(self):
         with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as handle:
@@ -556,6 +638,11 @@ class OptionalLookupNormalizationTests(TestCase):
 
 
 class NativePdfExtractionTests(TestCase):
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEST_MEDIA_ROOT, ignore_errors=True)
+
     @override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AI_INPUT_MODE='hybrid')
     @patch('main.services._call_responses', return_value={'reactions': []})
     def test_pdf_is_saved_as_text_and_ai_chunk_uses_saved_text(self, mocked_call):
@@ -594,6 +681,44 @@ class NativePdfExtractionTests(TestCase):
         ], keywords=['experimental procedure'], context_pages=1)
 
         self.assertEqual(selected, [0, 1, 2])
+
+    @override_settings(
+        MEDIA_ROOT=TEST_MEDIA_ROOT,
+        AI_INPUT_MODE='text',
+        AI_PDF_CHUNK_PAGES=1,
+        AI_KEYWORD_CONTEXT_PAGES=0,
+        AI_MAX_PARALLEL_REQUESTS=2,
+    )
+    @patch('main.services._create_structured_response')
+    def test_multiple_chunks_use_bounded_parallel_calls_and_record_api_time(self, mocked_create):
+        usage = SimpleNamespace(input_tokens=10, output_tokens=5, total_tokens=15)
+        response = SimpleNamespace(status='completed', output_text='{"reactions": []}', usage=usage)
+        mocked_create.side_effect = lambda *args, **kwargs: (response, 1234)
+        job = ExtractionJob.objects.create(title='Parallel extraction')
+        upload = SimpleUploadedFile(
+            'parallel.pdf',
+            make_pdf([
+                'Experimental Procedure. A was added, stirred, and afforded P in 80% yield.',
+                'Experimental Procedure. B was added, stirred, and afforded Q in 81% yield.',
+                'Experimental Procedure. C was added, stirred, and afforded R in 82% yield.',
+            ]),
+            content_type='application/pdf',
+        )
+        document = SourceDocument.objects.create(job=job, original_name='parallel.pdf', file=upload)
+
+        extract_document_reactions(job, document, object(), 'gpt-5.5')
+
+        self.assertEqual(mocked_create.call_count, 3)
+        self.assertEqual(job.token_usages.count(), 3)
+        self.assertEqual(
+            list(job.token_usages.order_by('chunk_number').values_list('duration_ms', flat=True)),
+            [1234, 1234, 1234],
+        )
+
+    @override_settings(AI_REASONING_EFFORT='low')
+    def test_reasoning_effort_is_only_sent_to_compatible_model_names(self):
+        self.assertEqual(_reasoning_options('gpt-5.5'), {'reasoning': {'effort': 'low'}})
+        self.assertEqual(_reasoning_options('gpt-4.1'), {})
 
     def test_two_column_text_is_emitted_column_by_column(self):
         document = fitz.open()
