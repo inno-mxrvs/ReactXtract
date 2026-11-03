@@ -10,7 +10,7 @@ For field-level human evaluation, use [ReactXtract_Field_Confidence_Accuracy_Tem
 
 1. Upload one or more article/supporting-information PDFs.
 2. Convert each PDF to a durable UTF-8 `.txt` file with original page boundaries, column-aware reading order, and detectable tables represented as explicit rows.
-3. Find candidate pages in the generated text using section keywords plus scheme, reaction-condition, procedure, and repeated-yield signals, then feed selected text-file page chunks to AI. Attach only the corresponding PDF pages that still require visual interpretation.
+3. Find candidate pages using section keywords plus scheme, reaction-condition, procedure, and repeated-yield signals. Adaptive chunking keeps small contiguous selections together, separates page gaps and clear reaction sections, applies page/character limits with one-page boundary overlap, and attaches only pages requiring visual interpretation.
 4. Consolidate exact duplicates locally using normalized reaction IDs, product names, source pages, and field values. Send only ambiguous duplicate pairs to AI for a decision; clearly distinct records never enter a consolidation prompt.
 5. Present extracted reactions as a signed, temporary review; no extracted field values are written to SQLite yet.
 6. Save reaction records only when the reviewer clicks **Save work**. The browser warns before refresh or navigation; confirming departure discards the temporary job, audit rows, and uploaded draft files.
@@ -46,7 +46,7 @@ pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Configure either the standard OpenAI variables or the Azure OpenAI variables. `AI_PDF_CHUNK_PAGES` and `AI_KEYWORD_CONTEXT_PAGES` control the page-window size and token usage. `AI_INPUT_MODE` accepts `hybrid` (default), `text`, or `vision`; hybrid uses native PyMuPDF text/tables plus targeted visual pages.
+Configure either the standard OpenAI variables or the Azure OpenAI variables. `AI_INPUT_MODE` accepts `hybrid` (default), `text`, or `vision`; hybrid uses native PyMuPDF text/tables plus targeted visual pages. Adaptive chunking keeps small contiguous selections in one request and splits larger inputs at page gaps, reaction-section starts, page limits, or character limits. `AI_MAX_PARALLEL_REQUESTS` overlaps independent chunks (default `2`), and `AI_REASONING_EFFORT=low` reduces latency for compatible reasoning deployments. Each saved AI-usage row records its API duration for performance diagnosis.
 
 Column-aware extraction groups positioned text blocks by reading column and saves the result under `media/extracted_text/`. The review workspace provides an **Extracted text** download for each document. PyMuPDF tables are included only when a valid multi-row, multi-column structure is recovered; captioned tables that cannot be reconstructed, image tables, schemes, and sparse image pages automatically remain in the visual subset.
 

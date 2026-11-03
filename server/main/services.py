@@ -2,7 +2,9 @@ import base64
 import json
 import os
 import re
+import time
 import unicodedata
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from decimal import Decimal, ROUND_HALF_UP
 
 import fitz
@@ -320,6 +322,96 @@ def chunk_page_numbers(page_numbers, max_pages=None):
     return [page_numbers[index:index + max_pages] for index in range(0, len(page_numbers), max_pages)]
 
 
+ADAPTIVE_SECTION_START_PATTERN = re.compile(
+    r'(?im)^\s*(?:\d+(?:\.\d+){1,4}\.?\s+)?'
+    r'(?:(?:general|representative)\s+)?'
+    r'(?:synthesis|preparation|experimental|reaction\s+scope|substrate\s+scope|'
+    r'optimization|synthetic\s+route)\b'
+)
+
+
+def adaptive_chunk_page_numbers(
+    page_numbers,
+    page_texts,
+    *,
+    max_pages=None,
+    single_call_max_pages=None,
+    single_call_max_chars=None,
+    chunk_max_chars=None,
+    overlap_pages=None,
+):
+    """Group selected pages by continuity, size, and clear reaction-section starts."""
+    pages = sorted({int(page) for page in page_numbers})
+    if not pages:
+        return []
+    if not settings.AI_ADAPTIVE_CHUNKING:
+        return chunk_page_numbers(pages, max_pages=max_pages)
+
+    max_pages = max(1, max_pages or settings.AI_PDF_CHUNK_PAGES)
+    single_call_max_pages = max(
+        1,
+        single_call_max_pages or settings.AI_SINGLE_CALL_MAX_PAGES,
+    )
+    single_call_max_chars = max(
+        1000,
+        single_call_max_chars or settings.AI_SINGLE_CALL_MAX_CHARS,
+    )
+    chunk_max_chars = max(1000, chunk_max_chars or settings.AI_CHUNK_MAX_CHARS)
+    overlap_pages = settings.AI_CHUNK_OVERLAP_PAGES if overlap_pages is None else overlap_pages
+    overlap_pages = max(0, min(2, int(overlap_pages)))
+    chunk_page_limit = min(max_pages, single_call_max_pages)
+
+    def page_length(page):
+        return len(page_texts[page]) if 0 <= page < len(page_texts) else 0
+
+    is_contiguous = all(right == left + 1 for left, right in zip(pages, pages[1:]))
+    total_chars = sum(page_length(page) for page in pages)
+    if (
+        is_contiguous
+        and len(pages) <= min(max_pages, single_call_max_pages)
+        and total_chars <= single_call_max_chars
+    ):
+        return [pages]
+
+    continuous_runs = []
+    current_run = []
+    for page in pages:
+        if current_run and page != current_run[-1] + 1:
+            continuous_runs.append(current_run)
+            current_run = []
+        current_run.append(page)
+    if current_run:
+        continuous_runs.append(current_run)
+
+    chunks = []
+    for run in continuous_runs:
+        current = []
+        current_chars = 0
+        for page in run:
+            text = page_texts[page] if 0 <= page < len(page_texts) else ''
+            page_chars = len(text)
+            starts_section = bool(ADAPTIVE_SECTION_START_PATTERN.search(text[:1600]))
+            exceeds_limit = current and (
+                len(current) >= chunk_page_limit
+                or current_chars + page_chars > chunk_max_chars
+            )
+            section_boundary = current and len(current) >= 2 and starts_section
+            if exceeds_limit or section_boundary:
+                chunks.append(current)
+                overlap = (
+                    current[-overlap_pages:]
+                    if overlap_pages and exceeds_limit and not section_boundary
+                    else []
+                )
+                current = list(overlap)
+                current_chars = sum(page_length(item) for item in current)
+            current.append(page)
+            current_chars += page_chars
+        if current:
+            chunks.append(current)
+    return chunks
+
+
 def build_pdf_chunk(pdf_path, page_numbers):
     source = fitz.open(pdf_path)
     chunk = fitz.open()
@@ -555,7 +647,7 @@ def _estimated_cost(prompt_tokens, completion_tokens):
     return value.quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
 
 
-def _save_usage(response, *, job, document, phase, chunk_number, model):
+def _save_usage(response, *, job, document, phase, chunk_number, model, duration_ms=0):
     usage = getattr(response, 'usage', None)
     prompt_tokens = int(getattr(usage, 'input_tokens', 0) or 0)
     completion_tokens = int(getattr(usage, 'output_tokens', 0) or 0)
@@ -570,6 +662,7 @@ def _save_usage(response, *, job, document, phase, chunk_number, model):
         completion_tokens=completion_tokens,
         total_tokens=total_tokens,
         estimated_cost_usd=_estimated_cost(prompt_tokens, completion_tokens),
+        duration_ms=max(0, int(duration_ms or 0)),
     )
 
 
@@ -584,8 +677,20 @@ def _response_json(response):
     return json.loads(output_text)
 
 
-def _call_responses(client, model, content, *, job, document=None, phase, chunk_number=1):
-    instructions = get_extraction_instructions()
+def _reasoning_options(model):
+    effort = settings.AI_REASONING_EFFORT
+    if not effort or effort not in {'none', 'minimal', 'low', 'medium', 'high', 'xhigh'}:
+        return {}
+    # Do not send reasoning options to models known not to support them. Azure
+    # deployment names that contain the underlying GPT-5/o-series name work too.
+    normalized_model = str(model or '').lower().replace('_', '-')
+    if not re.search(r'(^|-)gpt-?5(?:[.-]|$)|(^|-)o[134](?:[.-]|$)', normalized_model):
+        return {}
+    return {'reasoning': {'effort': effort}}
+
+
+def _create_structured_response(client, model, content, *, instructions, schema, schema_name):
+    started = time.perf_counter()
     response = client.responses.create(
         model=model,
         instructions=instructions,
@@ -593,11 +698,24 @@ def _call_responses(client, model, content, *, job, document=None, phase, chunk_
         text={
             'format': {
                 'type': 'json_schema',
-                'name': 'chemical_reaction_extraction',
+                'name': schema_name,
                 'strict': True,
-                'schema': REACTION_SCHEMA,
+                'schema': schema,
             },
         },
+        **_reasoning_options(model),
+    )
+    return response, round((time.perf_counter() - started) * 1000)
+
+
+def _call_responses(client, model, content, *, job, document=None, phase, chunk_number=1):
+    response, duration_ms = _create_structured_response(
+        client,
+        model,
+        content,
+        instructions=get_extraction_instructions(),
+        schema=REACTION_SCHEMA,
+        schema_name='chemical_reaction_extraction',
     )
     _save_usage(
         response,
@@ -606,6 +724,7 @@ def _call_responses(client, model, content, *, job, document=None, phase, chunk_
         phase=phase,
         chunk_number=chunk_number,
         model=model,
+        duration_ms=duration_ms,
     )
     return _response_json(response)
 
@@ -636,7 +755,9 @@ def extract_document_reactions(job, document, client, model):
     visual_page_candidates = set(visual_page_candidates)
 
     candidates = []
-    chunks = chunk_page_numbers(selected_pages)
+    chunks = adaptive_chunk_page_numbers(selected_pages, page_texts)
+    document._extraction_chunk_count = len(chunks)
+    chunk_requests = []
     for chunk_number, page_numbers in enumerate(chunks, start=1):
         _raise_if_discard_requested(job)
         native_context = '\n\n'.join(stored_page_sections[page] for page in page_numbers)
@@ -664,16 +785,54 @@ def extract_document_reactions(job, document, client, model):
                 'Extract every distinct reaction supported by these source pages and return field-level confidence and evidence.'
             ),
         })
-        result = _call_responses(
-            client,
-            model,
-            content,
-            job=job,
-            document=document,
-            phase=AITokenUsage.Phase.EXTRACTION,
-            chunk_number=chunk_number,
-        )
-        _raise_if_discard_requested(job)
+        chunk_requests.append((chunk_number, content))
+
+    results = {}
+    max_workers = min(settings.AI_MAX_PARALLEL_REQUESTS, len(chunk_requests))
+    if max_workers <= 1:
+        for chunk_number, content in chunk_requests:
+            results[chunk_number] = _call_responses(
+                client,
+                model,
+                content,
+                job=job,
+                document=document,
+                phase=AITokenUsage.Phase.EXTRACTION,
+                chunk_number=chunk_number,
+            )
+            _raise_if_discard_requested(job)
+    else:
+        instructions = get_extraction_instructions()
+        with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='reactxtract-ai') as executor:
+            future_chunks = {
+                executor.submit(
+                    _create_structured_response,
+                    client,
+                    model,
+                    content,
+                    instructions=instructions,
+                    schema=REACTION_SCHEMA,
+                    schema_name='chemical_reaction_extraction',
+                ): chunk_number
+                for chunk_number, content in chunk_requests
+            }
+            for future in as_completed(future_chunks):
+                chunk_number = future_chunks[future]
+                response, duration_ms = future.result()
+                _save_usage(
+                    response,
+                    job=job,
+                    document=document,
+                    phase=AITokenUsage.Phase.EXTRACTION,
+                    chunk_number=chunk_number,
+                    model=model,
+                    duration_ms=duration_ms,
+                )
+                results[chunk_number] = _response_json(response)
+                _raise_if_discard_requested(job)
+
+    for chunk_number in sorted(results):
+        result = results[chunk_number]
         candidates.extend(
             _normalize_reaction_lookups(_format_reaction_chemical_typography(reaction))
             for reaction in result.get('reactions', [])
@@ -809,18 +968,13 @@ def _call_duplicate_resolution(client, model, pairs, *, job, batch_number):
         'type': 'input_text',
         'text': 'AMBIGUOUS DUPLICATE PAIRS:\n' + json.dumps({'pairs': pairs}, ensure_ascii=False),
     }]
-    response = client.responses.create(
-        model=model,
+    response, duration_ms = _create_structured_response(
+        client,
+        model,
+        content,
         instructions=DUPLICATE_DECISION_INSTRUCTIONS,
-        input=[{'role': 'user', 'content': content}],
-        text={
-            'format': {
-                'type': 'json_schema',
-                'name': 'reaction_duplicate_decisions',
-                'strict': True,
-                'schema': DUPLICATE_DECISION_SCHEMA,
-            },
-        },
+        schema=DUPLICATE_DECISION_SCHEMA,
+        schema_name='reaction_duplicate_decisions',
     )
     _save_usage(
         response,
@@ -829,6 +983,7 @@ def _call_duplicate_resolution(client, model, pairs, *, job, batch_number):
         phase=AITokenUsage.Phase.CONSOLIDATION,
         chunk_number=batch_number,
         model=model,
+        duration_ms=duration_ms,
     )
     return _response_json(response)
 
@@ -909,7 +1064,7 @@ def run_extraction(job):
         candidates.extend(extract_document_reactions(job, document, client, model))
         _raise_if_discard_requested(job)
     source_chunk_count = sum(
-        len(chunk_page_numbers(document.selected_pages))
+        getattr(document, '_extraction_chunk_count', len(chunk_page_numbers(document.selected_pages)))
         for document in documents
     )
     if source_chunk_count <= 1:

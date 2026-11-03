@@ -94,6 +94,7 @@ class AITokenUsage(models.Model):
     completion_tokens = models.PositiveIntegerField(default=0)
     total_tokens = models.PositiveIntegerField(default=0)
     estimated_cost_usd = models.DecimalField(max_digits=14, decimal_places=6, default=0)
+    duration_ms = models.PositiveBigIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -248,6 +248,13 @@ The recommended POC defaults are:
 AI_PDF_CHUNK_PAGES=10
 AI_KEYWORD_CONTEXT_PAGES=1
 AI_INPUT_MODE=hybrid
+AI_ADAPTIVE_CHUNKING=true
+AI_SINGLE_CALL_MAX_PAGES=8
+AI_SINGLE_CALL_MAX_CHARS=80000
+AI_CHUNK_MAX_CHARS=50000
+AI_CHUNK_OVERLAP_PAGES=1
+AI_MAX_PARALLEL_REQUESTS=2
+AI_REASONING_EFFORT=low
 ```
 
 Input modes:
@@ -255,6 +262,21 @@ Input modes:
 - `hybrid` — recommended; sends extracted PyMuPDF text and tables, plus only pages that require visual interpretation
 - `text` — sends native PDF text and detected tables without visual PDF pages
 - `vision` — uses PDF visual input more extensively and may take longer or cost more
+
+#### Performance settings
+
+Adaptive chunking keeps a small, contiguous selection in one AI call. Larger selections are separated at page gaps, clear reaction-section starts, the page limit, or the character budget. This prevents unrelated non-adjacent sections from being placed in the same request while avoiding extra calls for short coherent inputs.
+
+- `AI_ADAPTIVE_CHUNKING=true` enables the adaptive strategy.
+- `AI_SINGLE_CALL_MAX_PAGES=8` is the largest small contiguous selection eligible for one call.
+- `AI_SINGLE_CALL_MAX_CHARS=80000` limits the extracted native text eligible for that one call.
+- `AI_CHUNK_MAX_CHARS=50000` limits each chunk after adaptive splitting.
+- `AI_CHUNK_OVERLAP_PAGES=1` repeats one boundary page when a size limit forces a split, preserving cross-page procedure context. Explicit section and page-gap splits are not overlapped.
+- `AI_PDF_CHUNK_PAGES=10` remains the hard maximum number of selected pages in any chunk.
+
+`AI_MAX_PARALLEL_REQUESTS` controls how many independent PDF chunks may call the AI at the same time. Keep the POC default of `2`; values above `4` are blocked to avoid excessive rate-limit pressure. Set it to `1` only when the AI deployment has a strict request limit.
+
+`AI_REASONING_EFFORT=low` reduces latency for compatible GPT-5 or o-series deployments. ReactXtract ignores this setting for model names known not to support reasoning controls. Only change it when instructed by the project team, because higher effort can increase processing time.
 
 #### Token-cost settings
 
@@ -478,7 +500,21 @@ Confirm that:
 
 ReactXtract intentionally excludes unsupported inference, biological assays, characterization-only entries, work-up steps, and failed reactions.
 
-### 13.10 PDF highlighting does not find a value
+### 13.10 Extraction takes several minutes
+
+The local computer performs PDF text/table extraction, but the AI service performs the longest part of most runs. Runtime can vary even for the same PDF because of network latency, VPN/proxy inspection, Azure/OpenAI deployment load, selected visual pages, generated reaction count, and model reasoning effort. CPU differences usually affect only the shorter local preprocessing stage.
+
+After a completed extraction, expand **AI call usage details** and compare **API time** with the overall **Extraction** time:
+
+- If API time accounts for most of the total, check the user's network/VPN and AI deployment region or capacity. A faster computer will have limited effect.
+- If the total is much larger than the API times, compare disk performance, PDF size, endpoint-security scanning, and Python versions.
+- Confirm both computers use the same Git revision, approved `.env`, PDF files, model/deployment, `AI_INPUT_MODE`, chunk size, and context-page setting.
+- Keep `AI_MAX_PARALLEL_REQUESTS=2`. This overlaps multiple independent chunks; it cannot accelerate a document that produces only one AI chunk.
+- For a compatible GPT-5 deployment, use `AI_REASONING_EFFORT=low` when approved.
+
+Do not stop the command window during an active API call. If the same one-chunk request consistently remains slow only on one network, test without VPN/proxy inspection if organizational policy permits, or ask the Azure/OpenAI administrator to check deployment latency and throttling.
+
+### 13.11 PDF highlighting does not find a value
 
 The PDF text layer may use different typography or contain the information only in a structure or image. Check the cited page manually using **Original PDF**. Bounding-box evidence is used when available, but not every image-only value has searchable PDF text.
 
