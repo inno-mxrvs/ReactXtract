@@ -50,9 +50,20 @@
                 <div class="tree-root"><span class="tree-toggle" aria-hidden="true">&minus;</span><b>Extracted reactions</b></div>
                 <ol class="tree-list">
                     {% for reaction in reactions %}
-                    <li><button class="tree-node{% if forloop.first %} is-active{% endif %}" type="button" data-reaction-target="reaction-{{ reaction.form_key }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
-                        <span class="flask-icon" aria-hidden="true">&#9879;</span><span><b>RX-{{ reaction.display_id }}</b><small>{% if reaction.products %}{{ reaction.products.0 }}{% endif %}</small></span>
-                    </button></li>
+                    <li>
+                        <button class="tree-node{% if forloop.first %} is-active{% endif %}" type="button" data-reaction-target="reaction-{{ reaction.form_key }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                            <span class="flask-icon" aria-hidden="true">&#9879;</span><span><b>RX-{{ reaction.display_id }}</b><small>{% if reaction.products %}{{ reaction.products.0 }}{% endif %}</small></span>
+                        </button>
+                        {% if reaction.stage_details %}
+                        <ol class="tree-stage-list" aria-label="RX-{{ reaction.display_id }} stages">
+                            {% for stage in reaction.stage_details %}
+                            <li><button class="tree-stage-node" type="button" data-reaction-target="reaction-{{ reaction.form_key }}" data-stage-target="stage-{{ reaction.form_key }}-{{ stage.stage_number }}" aria-selected="false">
+                                <span>{{ stage.stage_number }}</span><span><b>RX-{{ stage.display_id }}</b><small>{% if stage.products %}{{ stage.products.0 }}{% else %}{{ stage.description }}{% endif %}</small></span>
+                            </button></li>
+                            {% endfor %}
+                        </ol>
+                        {% endif %}
+                    </li>
                     {% endfor %}
                 </ol>
             </aside>
@@ -62,6 +73,24 @@
                 {% for reaction in reactions %}
                 <article class="reaction-panel{% if not forloop.first %} is-hidden{% endif %}" id="reaction-{{ reaction.form_key }}" data-reaction-panel>
                     <div class="reaction-panel__title"><div><span>REACTION ID</span><h2>RX-{{ reaction.display_id }}</h2></div><span class="stage-chip">Stages: {{ reaction.reaction_stages }}</span></div>
+                    {% if reaction.stage_details %}
+                    <section class="stage-breakdown" aria-label="Stage separation for RX-{{ reaction.display_id }}">
+                        <header><div><span>STAGE SEPARATION</span><strong>{{ reaction.stage_details|length }} supported stage{{ reaction.stage_details|length|pluralize }}</strong></div><small>Each stage remains part of RX-{{ reaction.display_id }}</small></header>
+                        <div class="stage-breakdown__list">
+                            {% for stage in reaction.stage_details %}
+                            <article class="stage-detail{% if stage.is_placeholder %} stage-detail--placeholder{% endif %}" id="stage-{{ reaction.form_key }}-{{ stage.stage_number }}" data-stage-card>
+                                <header><div><span>{{ stage.stage_number }}</span><strong>RX-{{ stage.display_id }}</strong></div><b class="confidence-badge--{{ stage.confidence|confidence_class }}">{{ stage.confidence|confidence_percent }}%</b></header>
+                                <p>{{ stage.description }}</p>
+                                <dl>
+                                    <div><dt>Starting materials</dt><dd>{% if stage.starting_materials %}{{ stage.starting_materials|join:", " }}{% else %}&mdash;{% endif %}</dd></div>
+                                    <div><dt>Product / intermediate</dt><dd>{% if stage.products %}{{ stage.products|join:", " }}{% else %}&mdash;{% endif %}</dd></div>
+                                </dl>
+                                <footer>{% if stage.source_file %}<b>{{ stage.source_file }}</b>{% if stage.page %}<span>p. {{ stage.page }}</span>{% endif %}{% else %}<span>No stage-specific source location stored.</span>{% endif %}{% if stage.quote %}<q>{{ stage.quote }}</q>{% endif %}</footer>
+                            </article>
+                            {% endfor %}
+                        </div>
+                    </section>
+                    {% endif %}
                     <div class="reaction-form-grid">
                         {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='products' input_name='products' label='Products' value=reaction.products|lines metadata=reaction.field_evidence.products confidence=reaction.confidence_scores.products multiline=True individual_values=True %}
                         {% include 'components/reaction_field.html' with reaction_id=reaction.form_key field_name='starting-materials' input_name='starting_materials' label='Starting materials' value=reaction.starting_materials|lines metadata=reaction.field_evidence.starting_materials confidence=reaction.confidence_scores.starting_materials multiline=True individual_values=True %}
@@ -85,6 +114,6 @@
     </form>
     {% elif job.status == 'completed' %}<div class="empty-panel shell"><h2>No distinct reactions found</h2><p>The model did not identify a source-supported reaction in the selected PDF pages.</p></div>{% endif %}
 
-    {% if job.token_usages.all %}<details class="usage-panel shell"><summary>AI call usage details ({{ job.token_usages.all|length }} calls)</summary><div class="records-table-wrap"><table class="records-table"><thead><tr><th>Phase</th><th>Document</th><th>Chunk</th><th>API time</th><th>Prompt</th><th>Completion</th><th>Total</th><th>Cost</th></tr></thead><tbody>{% for usage in job.token_usages.all %}<tr><td>{{ usage.get_phase_display }}</td><td>{{ usage.document.original_name|default:'All candidates' }}</td><td>{{ usage.chunk_number }}</td><td>{{ usage.duration_ms|duration_ms }}</td><td>{{ usage.prompt_tokens }}</td><td>{{ usage.completion_tokens }}</td><td>{{ usage.total_tokens }}</td><td>${{ usage.estimated_cost_usd }}</td></tr>{% endfor %}</tbody></table></div></details>{% endif %}
+    {% if job.token_usages.all %}<details class="usage-panel shell"><summary>AI call usage details ({{ job.token_usages.all|length }} attempts)</summary><div class="records-table-wrap"><table class="records-table"><thead><tr><th>Phase</th><th>Document</th><th>Chunk</th><th>Attempt</th><th>Status</th><th>API time</th><th>Prompt</th><th>Completion</th><th>Reasoning</th><th>Total</th><th>Cost</th><th>Error</th></tr></thead><tbody>{% for usage in job.token_usages.all %}<tr><td>{{ usage.get_phase_display }}</td><td>{{ usage.document.original_name|default:'All candidates' }}</td><td>{{ usage.chunk_number }}</td><td>{{ usage.attempt_number }}</td><td>{{ usage.get_status_display }}</td><td>{{ usage.duration_ms|duration_ms }}</td><td>{{ usage.prompt_tokens }}</td><td>{{ usage.completion_tokens }}</td><td>{{ usage.reasoning_tokens }}</td><td>{{ usage.total_tokens }}</td><td>${{ usage.estimated_cost_usd }}</td><td title="{{ usage.error_message }}">{{ usage.error_type|default:'—' }}</td></tr>{% endfor %}</tbody></table></div></details>{% endif %}
 </main>
 {% endblock %}

@@ -254,7 +254,7 @@ AI_SINGLE_CALL_MAX_CHARS=80000
 AI_CHUNK_MAX_CHARS=50000
 AI_CHUNK_OVERLAP_PAGES=1
 AI_MAX_PARALLEL_REQUESTS=2
-AI_REASONING_EFFORT=low
+AI_REASONING_EFFORT=none
 ```
 
 Input modes:
@@ -276,7 +276,7 @@ Adaptive chunking keeps a small, contiguous selection in one AI call. Larger sel
 
 `AI_MAX_PARALLEL_REQUESTS` controls how many independent PDF chunks may call the AI at the same time. Keep the POC default of `2`; values above `4` are blocked to avoid excessive rate-limit pressure. Set it to `1` only when the AI deployment has a strict request limit.
 
-`AI_REASONING_EFFORT=low` reduces latency for compatible GPT-5 or o-series deployments. ReactXtract ignores this setting for model names known not to support reasoning controls. Only change it when instructed by the project team, because higher effort can increase processing time.
+`AI_REASONING_EFFORT=none` minimizes latency for the configured GPT-5.5 deployment. ReactXtract ignores this setting for model names known not to support reasoning controls and maps the unsupported GPT-5.5 value `minimal` to `none`. Only change it when instructed by the project team, because higher effort can increase processing time.
 
 #### Token-cost settings
 
@@ -517,8 +517,11 @@ After a completed extraction, expand **AI call usage details** and compare **API
 - If API time accounts for most of the total, check the user's network/VPN and AI deployment region or capacity. A faster computer will have limited effect.
 - If the total is much larger than the API times, compare disk performance, PDF size, endpoint-security scanning, and Python versions.
 - Confirm both computers use the same Git revision, approved `.env`, PDF files, model/deployment, `AI_INPUT_MODE`, chunk size, and context-page setting.
-- Keep `AI_MAX_PARALLEL_REQUESTS=2`. This overlaps multiple independent chunks; it cannot accelerate a document that produces only one AI chunk.
-- For a compatible GPT-5 deployment, use `AI_REASONING_EFFORT=low` when approved.
+- Keep `AI_MAX_PARALLEL_REQUESTS=2`. Reaction-dense visual pages are divided into non-overlapping chunks of `AI_REACTION_DENSE_CHUNK_PAGES=2` pages so those requests can run concurrently.
+- For the configured GPT-5.5 deployment, use `AI_REASONING_EFFORT=none` to limit hidden reasoning latency and cost.
+- Hybrid extraction sends native text plus cropped reaction schemes rather than complete visual PDF pages.
+- `AI_REQUEST_TIMEOUT_SECONDS=300` limits an individual attempt to five minutes, while `AI_MAX_RETRIES=1` allows at most one audited retry.
+- The AI usage table records every completed, failed, or timed-out attempt, including reasoning tokens and error type.
 
 Do not stop the command window during an active API call. If the same one-chunk request consistently remains slow only on one network, test without VPN/proxy inspection if organizational policy permits, or ask the Azure/OpenAI administrator to check deployment latency and throttling.
 
@@ -526,7 +529,13 @@ Do not stop the command window during an active API call. If the same one-chunk 
 
 The PDF text layer may use different typography or contain the information only in a structure or image. Check the cited page manually using **Original PDF**. Bounding-box evidence is used when available, but not every image-only value has searchable PDF text.
 
-For a newly extracted image-only product, ReactXtract prefers the stored visual bounding box over a nearby narrative quote. Extractions created before this rule was added must be processed again to receive corrected visual evidence coordinates.
+ReactXtract highlights only complete searchable PDF-word matches. If the displayed value differs from the source wording—for example, `20°C` was normalized from “room temperature,” or spacing differs—the viewer leaves the page unhighlighted instead of marking different words. Lookup-normalized values retain their original source aliases for exact matching. Values found only inside images or chemical structures are not highlighted, and AI visual bounding boxes are never drawn; the viewer opens the cited page instead. Check **Original PDF** when no exact highlight is available.
+
+Standalone numbers are not accepted as products. A genuine numbered source compound must be identified as **compound 14**, **intermediate 14**, or another explicit role supported by a preparative transformation. Atom assignments such as `H14` and `C14` in NMR or characterization text are ignored.
+
+When a source explicitly reports a separable or inseparable mixture of named products, ReactXtract displays each product as a separate reaction candidate instead of using the complete mixture phrase as one product. Shared reaction fields remain attached to each candidate. Process an existing PDF again to apply this behavior to a previously generated extraction.
+
+For reactions with multiple explicitly supported stages, the reaction tree shows nested identifiers such as **RX-0001A** and **RX-0001B**. Select a stage to open its stage card containing the source-supported transformation description, starting materials, product or intermediate, confidence, and evidence. Existing records extracted before stage details were introduced show placeholder stage nodes; process the PDF again to obtain populated stage cards.
 
 ## 14. POC Security and Usage Notes
 
