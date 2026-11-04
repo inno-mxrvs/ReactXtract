@@ -23,7 +23,12 @@ from .lookups import (
 )
 from .excel_exports import build_accuracy_workbook
 from .models import ExtractionJob, Reaction, SourceDocument
-from .services import ExtractionDiscarded, normalize_temperature_range, run_extraction
+from .services import (
+    ExtractionDiscarded,
+    normalize_temperature_range,
+    run_extraction,
+    split_product_values,
+)
 
 
 ALLOWED_EXTENSIONS = {'.pdf'}
@@ -36,6 +41,83 @@ REACTION_FIELDS = [
     'other_conditions', 'reaction_stages', 'reaction_description_type', 'yield',
 ]
 DRAFT_SIGNING_SALT = 'reactxtract.reaction-draft.v1'
+PDF_HIGHLIGHT_VALUE_ALIASES = {
+    'py': ('pyridine',),
+}
+
+
+def _stage_suffix(number):
+    number = max(1, int(number))
+    suffix = ''
+    while number:
+        number, remainder = divmod(number - 1, 26)
+        suffix = chr(65 + remainder) + suffix
+    return suffix
+
+
+def _stage_details_for_storage(raw_details):
+    stored = []
+    for position, raw in enumerate(raw_details or [], start=1):
+        if raw.get('is_placeholder'):
+            continue
+        try:
+            stage_number = max(1, int(raw.get('stage_number') or position))
+            confidence = max(0, min(1, float(raw.get('confidence') or 0)))
+        except (TypeError, ValueError):
+            continue
+        stored.append({
+            'stage_number': stage_number,
+            'description': str(raw.get('description') or ''),
+            'starting_materials': [str(value) for value in raw.get('starting_materials') or []],
+            'products': [str(value) for value in raw.get('products') or []],
+            'confidence': confidence,
+            'source_file': str(raw.get('source_file') or ''),
+            'page': str(raw.get('page') or ''),
+            'quote': str(raw.get('quote') or ''),
+        })
+    return sorted(stored, key=lambda item: item['stage_number'])
+
+
+def _stage_details_for_display(raw_details, reaction_stages, reaction_display_id):
+    details = []
+    for raw in _stage_details_for_storage(raw_details):
+        stage_number = raw['stage_number']
+        details.append({
+            'stage_number': stage_number,
+            'display_id': f'{reaction_display_id}{_stage_suffix(stage_number)}',
+            'description': str(raw.get('description') or ''),
+            'starting_materials': [str(value) for value in raw.get('starting_materials') or []],
+            'products': [str(value) for value in raw.get('products') or []],
+            'confidence': float(raw.get('confidence') or 0),
+            'source_file': str(raw.get('source_file') or ''),
+            'page': str(raw.get('page') or ''),
+            'quote': str(raw.get('quote') or ''),
+            'is_placeholder': False,
+        })
+    details.sort(key=lambda item: item['stage_number'])
+    if details:
+        return details
+    try:
+        stage_count = int(str(reaction_stages or '').strip())
+    except (TypeError, ValueError):
+        stage_count = 0
+    if stage_count <= 1:
+        return []
+    return [
+        {
+            'stage_number': number,
+            'display_id': f'{reaction_display_id}{_stage_suffix(number)}',
+            'description': 'Stage-specific evidence was not stored for this extraction.',
+            'starting_materials': [],
+            'products': [],
+            'confidence': 0,
+            'source_file': '',
+            'page': '',
+            'quote': '',
+            'is_placeholder': True,
+        }
+        for number in range(1, stage_count + 1)
+    ]
 
 
 def home(request):
@@ -111,11 +193,20 @@ def _prepare_draft_reactions(reaction_data):
             item.get('reagents') or [],
             item.get('catalysts') or [],
         )
+        for field in ('reagents', 'catalysts', 'solvents'):
+            value_aliases = []
+            for lookup_item in lookup_metadata[field]:
+                displayed = str(lookup_item.get('value') or '').strip()
+                source = str(lookup_item.get('input') or '').strip()
+                if displayed and source and displayed.casefold() != source.casefold():
+                    value_aliases.append({'display': displayed, 'source': source})
+            field_evidence[field]['value_aliases'] = value_aliases
+        display_id = f'{index:04d}'
         reactions.append({
             'form_key': f'draft_{index}',
-            'display_id': f'{index:04d}',
+            'display_id': display_id,
             'reaction_number': index,
-            'products': item.get('products') or [],
+            'products': split_product_values(item.get('products') or []),
             'starting_materials': item.get('starting_materials') or [],
             'reagents': reagents,
             'catalysts': catalysts,
@@ -127,6 +218,11 @@ def _prepare_draft_reactions(reaction_data):
             'reaction_stages': str(item.get('reaction_stages') or ''),
             'reaction_description_type': item.get('reaction_description_type') or '',
             'reaction_yield': item.get('yield') or '',
+            'stage_details': _stage_details_for_display(
+                item.get('stage_details') or [],
+                item.get('reaction_stages') or '',
+                display_id,
+            ),
             'source_evidence': source_evidence,
             'confidence_scores': confidence_scores,
             'field_evidence': field_evidence,
@@ -141,6 +237,11 @@ def _saved_reactions_for_display(job):
     for reaction in reactions:
         reaction.form_key = str(reaction.id)
         reaction.display_id = f'{reaction.id:04d}'
+        reaction.stage_details = _stage_details_for_display(
+            reaction.stage_details,
+            reaction.reaction_stages,
+            reaction.display_id,
+        )
         _, reaction.lookup_metadata = reaction_lookup_metadata(
             reaction.solvents,
             reaction.other_conditions,
@@ -308,6 +409,10 @@ def _split_lines(value):
     return values
 
 
+def _split_products(value):
+    return split_product_values(_split_lines(value))
+
+
 def _split_normalized_solvents(value):
     normalized, _ = normalize_solvent_values(_split_lines(value))
     return normalized
@@ -342,7 +447,7 @@ def save_reactions(request, job_id):
                 Reaction.objects.create(
                     job=job,
                     reaction_number=index,
-                    products=_split_lines(request.POST.get(prefix + 'products', '')),
+                    products=_split_products(request.POST.get(prefix + 'products', '')),
                     starting_materials=_split_lines(request.POST.get(prefix + 'starting_materials', '')),
                     reagents=_split_normalized_reagent_catalyst(request.POST.get(prefix + 'reagents', '')),
                     catalysts=_split_normalized_reagent_catalyst(request.POST.get(prefix + 'catalysts', '')),
@@ -358,6 +463,7 @@ def save_reactions(request, job_id):
                     reaction_stages=request.POST.get(prefix + 'reaction_stages', '').strip(),
                     reaction_description_type=request.POST.get(prefix + 'reaction_description_type', '').strip(),
                     reaction_yield=request.POST.get(prefix + 'reaction_yield', '').strip(),
+                    stage_details=_stage_details_for_storage(item.get('stage_details') or []),
                     reviewer_notes=request.POST.get(prefix + 'reviewer_notes', '').strip(),
                     source_evidence=item.get('source_evidence') or [],
                     confidence_scores=item.get('confidence_scores') or {},
@@ -379,7 +485,7 @@ def save_reactions(request, job_id):
     with transaction.atomic():
         for reaction in job.reactions.all():
             prefix = f'reaction_{reaction.id}_'
-            reaction.products = _split_lines(request.POST.get(prefix + 'products', ''))
+            reaction.products = _split_products(request.POST.get(prefix + 'products', ''))
             reaction.starting_materials = _split_lines(request.POST.get(prefix + 'starting_materials', ''))
             reaction.reagents = _split_normalized_reagent_catalyst(request.POST.get(prefix + 'reagents', ''))
             reaction.catalysts = _split_normalized_reagent_catalyst(request.POST.get(prefix + 'catalysts', ''))
@@ -503,12 +609,14 @@ def export_usage_csv(request, job_id):
     response['Content-Disposition'] = f'attachment; filename="reactxtract-{job.id}-token-usage.csv"'
     response.write('\ufeff')
     writer = csv.writer(response)
-    writer.writerow(['Phase', 'Document', 'Chunk', 'Model/deployment', 'API duration ms', 'Prompt tokens', 'Completion tokens', 'Total tokens', 'Estimated cost USD', 'Created'])
+    writer.writerow(['Phase', 'Document', 'Chunk', 'Attempt', 'Status', 'Model/deployment', 'API duration ms', 'Prompt tokens', 'Completion tokens', 'Reasoning tokens', 'Total tokens', 'Estimated cost USD', 'Error type', 'Error message', 'Created'])
     for usage in job.token_usages.select_related('document'):
         writer.writerow([
             usage.get_phase_display(), usage.document.original_name if usage.document else 'All candidates',
-            usage.chunk_number, usage.model_name, usage.duration_ms, usage.prompt_tokens, usage.completion_tokens,
-            usage.total_tokens, usage.estimated_cost_usd, usage.created_at.isoformat(),
+            usage.chunk_number, usage.attempt_number, usage.get_status_display(), usage.model_name,
+            usage.duration_ms, usage.prompt_tokens, usage.completion_tokens, usage.reasoning_tokens,
+            usage.total_tokens, usage.estimated_cost_usd, usage.error_type, usage.error_message,
+            usage.created_at.isoformat(),
         ])
     return response
 
@@ -555,6 +663,7 @@ def export_job_json(request, job_id):
                 'number_of_reaction_stages': item.reaction_stages,
                 'type_of_reaction_description': item.reaction_description_type,
                 'yield': item.reaction_yield,
+                'stage_details': item.stage_details,
                 'lookup_metadata': reaction_lookup_metadata(
                     item.solvents,
                     item.other_conditions,
@@ -573,12 +682,17 @@ def export_job_json(request, job_id):
                 'phase': item.phase,
                 'document': item.document.original_name if item.document else None,
                 'chunk_number': item.chunk_number,
+                'attempt_number': item.attempt_number,
+                'status': item.status,
                 'model': item.model_name,
                 'duration_ms': item.duration_ms,
                 'prompt_tokens': item.prompt_tokens,
                 'completion_tokens': item.completion_tokens,
+                'reasoning_tokens': item.reasoning_tokens,
                 'total_tokens': item.total_tokens,
                 'estimated_cost_usd': str(item.estimated_cost_usd),
+                'error_type': item.error_type,
+                'error_message': item.error_message,
             }
             for item in job.token_usages.all()
         ],
@@ -593,10 +707,6 @@ PDF_SEARCH_TRANSLATION = str.maketrans({
     **dict(zip('⁰¹²³⁴⁵⁶⁷⁸⁹', '0123456789')),
     '⁺': '+', '⁻': '-', '−': '-', '–': '-', '—': '-',
 })
-PDF_HIGHLIGHT_STOP_WORDS = {
-    'the', 'and', 'for', 'with', 'from', 'was', 'were', 'after', 'before',
-    'into', 'then', 'this', 'that', 'not', 'reported', 'reaction', 'mixture',
-}
 COMPOUND_LABEL_VALUE_PATTERN = re.compile(
     r'(?i)^(?:(?:compound|intermediate|precursor|product|fragment)\s+)?'
     r'\(?([A-Za-z]+-?\d+[A-Za-z]?|\d+[A-Za-z]?)\)?$'
@@ -642,6 +752,41 @@ def _quote_anchor_quads(page, quote):
     return []
 
 
+def _normalized_pdf_word(value):
+    return _pdf_search_text(value).casefold().strip(' .,:;()[]{}"\'')
+
+
+def _exact_phrase_quads(page, phrase):
+    """Match complete PDF words, never a token embedded inside another word."""
+    target = [
+        token for token in (_normalized_pdf_word(part) for part in phrase.split())
+        if token
+    ]
+    if not target:
+        return []
+    words = page.get_text('words', sort=True)
+    normalized_words = [_normalized_pdf_word(word[4]) for word in words]
+    quads = []
+    for start in range(0, len(words) - len(target) + 1):
+        matching_words = words[start:start + len(target)]
+        if normalized_words[start:start + len(target)] != target:
+            continue
+        # Allow line wrapping, but never join words from separate text blocks.
+        if len({word[5] for word in matching_words}) != 1:
+            continue
+        line_rectangles = {}
+        for word in matching_words:
+            line_key = (word[5], word[6])
+            rectangle = fitz.Rect(word[:4])
+            if line_key in line_rectangles:
+                line_rectangles[line_key].include_rect(rectangle)
+            else:
+                line_rectangles[line_key] = rectangle
+        for rectangle in line_rectangles.values():
+            quads.append(fitz.Quad(rectangle.tl, rectangle.tr, rectangle.bl, rectangle.br))
+    return _unique_quads(quads)
+
+
 def _field_value_quads(page, field_value):
     value = _pdf_search_text(field_value)
     if not value or value.lower() == 'not reported.':
@@ -652,64 +797,39 @@ def _field_value_quads(page, field_value):
         for part in re.split(r'[\n;|]+', str(field_value or ''))
     ]
     quads = []
-    for phrase in phrases:
-        if len(phrase) >= 2 and phrase.lower() != 'not reported.':
-            quads.extend(page.search_for(phrase, quads=True))
-    if quads:
-        return _unique_quads(quads)
-
-    # Do not match a bare numeric label against every occurrence of that number.
-    # Look for a source-role phrase such as "precursor 11" instead.
+    ordinary_phrases = []
     for phrase in phrases:
         label_match = COMPOUND_LABEL_VALUE_PATTERN.fullmatch(phrase)
         if not label_match:
+            ordinary_phrases.append(phrase)
             continue
         label = label_match.group(1)
         for role in ('compound', 'intermediate', 'precursor', 'product', 'fragment'):
-            contextual_quads = page.search_for(f'{role} {label}', quads=True)
+            contextual_quads = _exact_phrase_quads(page, f'{role} {label}')
             if contextual_quads:
-                return _unique_quads(contextual_quads)
-
-    # AI wording can include surrounding labels or punctuation. Fall back to
-    # distinctive extracted tokens, including flattened molecular formulae.
-    tokens = {
-        token for token in re.findall(r'[A-Za-z0-9][A-Za-z0-9+./−–-]{1,}', value)
-        if token.casefold() not in PDF_HIGHLIGHT_STOP_WORDS
-        and not token.isdigit()
-        and (len(token) >= 4 or any(character.isdigit() for character in token))
-    }
-    for token in sorted(tokens, key=len, reverse=True):
-        quads.extend(page.search_for(token, quads=True)[:4])
-        if len(quads) >= 16:
-            break
-    return _unique_quads(quads)
-
-
-def _bbox_rectangle(page, bbox_values):
-    if not bbox_values or len(bbox_values) != 4:
-        return None
-    try:
-        left, top, right, bottom = [max(0, min(1, float(value))) for value in bbox_values]
-    except (TypeError, ValueError):
-        return None
-    if right <= left or bottom <= top:
-        return None
-    return fitz.Rect(
-        left * page.rect.width,
-        top * page.rect.height,
-        right * page.rect.width,
-        bottom * page.rect.height,
-    )
+                return contextual_quads
+    for phrase in ordinary_phrases:
+        if len(phrase) >= 2 and phrase.lower() != 'not reported.':
+            quads.extend(_exact_phrase_quads(page, phrase))
+    if quads:
+        return _unique_quads(quads)
+    # Locate a known abbreviation's exact source term without allowing partial
+    # word matches (for example, Py must match the whole word pyridine).
+    if len(phrases) == 1:
+        for source_alias in PDF_HIGHLIGHT_VALUE_ALIASES.get(phrases[0].casefold(), ()):
+            quads.extend(_exact_phrase_quads(page, source_alias))
+    if quads:
+        return _unique_quads(quads)
+    return []
 
 
-def _find_quote_rectangles(page, quote, field_value='', bbox_values=None):
+def _find_quote_rectangles(page, quote, field_value='', bbox_values=None, field_name=''):
     quote_quads = _quote_anchor_quads(page, quote)
     value_quads = _field_value_quads(page, field_value)
-    bbox_rectangle = _bbox_rectangle(page, bbox_values)
-    # When the extracted value exists only inside a scheme drawing, highlighting
-    # an unrelated narrative quote is misleading. Prefer its visual evidence box.
-    if field_value and not value_quads and bbox_rectangle:
-        return [bbox_rectangle]
+    # Image-only values cannot be text-highlighted. Never use an AI visual bbox
+    # as a substitute for an exact searchable PDF-word match.
+    if field_value and not value_quads:
+        return []
     if value_quads and quote_quads:
         anchor = fitz.Rect(quote_quads[0].rect)
         for quad in quote_quads[1:]:
@@ -721,7 +841,9 @@ def _find_quote_rectangles(page, quote, field_value='', bbox_values=None):
         nearby = [quad for quad in value_quads if anchor.intersects(quad.rect)]
         if nearby:
             return _unique_quads(nearby)
-    return value_quads or quote_quads or ([bbox_rectangle] if bbox_rectangle else [])
+    if field_value:
+        return value_quads
+    return quote_quads
 
 
 def pdf_page_image(request, document_id, page_number):
@@ -733,8 +855,9 @@ def pdf_page_image(request, document_id, page_number):
         page = pdf[page_number - 1]
         quote = request.GET.get('q', '')[:1000]
         field_value = request.GET.get('v', '')[:2000]
+        field_name = request.GET.get('f', '')[:100]
         bbox_values = request.GET.get('bbox', '').split(',')
-        rectangles = _find_quote_rectangles(page, quote, field_value, bbox_values)
+        rectangles = _find_quote_rectangles(page, quote, field_value, bbox_values, field_name)
         for rectangle in rectangles:
             annotation = page.add_highlight_annot(rectangle)
             annotation.set_colors(stroke=(1, 0.42, 0))

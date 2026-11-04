@@ -51,6 +51,26 @@ def _field_metadata_schema():
     }
 
 
+STAGE_DETAIL_SCHEMA = {
+    'type': 'object',
+    'additionalProperties': False,
+    'properties': {
+        'stage_number': {'type': 'integer', 'minimum': 1},
+        'description': {'type': 'string'},
+        'starting_materials': {'type': 'array', 'items': {'type': 'string'}},
+        'products': {'type': 'array', 'items': {'type': 'string'}},
+        'confidence': {'type': 'number', 'minimum': 0, 'maximum': 1},
+        'source_file': {'type': 'string'},
+        'page': {'type': 'string'},
+        'quote': {'type': 'string'},
+    },
+    'required': [
+        'stage_number', 'description', 'starting_materials', 'products',
+        'confidence', 'source_file', 'page', 'quote',
+    ],
+}
+
+
 REACTION_SCHEMA = {
     'type': 'object',
     'additionalProperties': False,
@@ -73,6 +93,10 @@ REACTION_SCHEMA = {
                     'reaction_stages': {'type': 'string'},
                     'reaction_description_type': {'type': 'string'},
                     'yield': {'type': 'string'},
+                    'stage_details': {
+                        'type': 'array',
+                        'items': STAGE_DETAIL_SCHEMA,
+                    },
                     'field_metadata': {
                         'type': 'object',
                         'additionalProperties': False,
@@ -80,7 +104,7 @@ REACTION_SCHEMA = {
                         'required': REACTION_FIELDS,
                     },
                 },
-                'required': REACTION_FIELDS + ['field_metadata'],
+                'required': REACTION_FIELDS + ['stage_details', 'field_metadata'],
             },
         },
     },
@@ -90,16 +114,17 @@ REACTION_SCHEMA = {
 EXTRACTION_OPERATIONAL_APPENDIX = """
 
 Application requirements for hybrid PDF extraction:
-- Analyze only the supplied SOURCE PAGE blocks and any attached VISUAL PAGE PDF.
+- Analyze only the supplied SOURCE PAGE blocks and attached VISUAL CROP images.
 - SOURCE PAGE blocks contain PyMuPDF native text reconstructed in column-aware reading order and may include separately extracted tables.
-- The VISUAL PAGE PDF contains only pages that require visual interpretation, such as reaction schemes, structures, sparse/image pages, or tables that native extraction could not recover.
-- The prompt maps every source and visual page to its original source page number. Always report the original source page number.
+- VISUAL CROP images contain only bounded reaction-scheme or structure regions; full PDF pages are not attached when a crop can supply the visual evidence.
+- The prompt maps every source page and visual crop to its original source page number and original normalized crop rectangle. Always report the original source page number and convert a crop-relative bbox back into original-page normalized coordinates.
 - Prefer the structured native table rows when present, while checking an attached visual page when layout, arrows, structures, merged cells, or symbols carry information not represented in text.
 - Use the section keywords to focus on explicit procedures, schemes, and experimental descriptions.
 - Return each unavailable list field as [] and each unavailable scalar as "".
 - The scalar fields include reaction_temperature, reaction_description_type, and yield. Return each as "" when unavailable and include field_metadata for each one.
 - Keep distinct reactions separate. Do not collapse substrate-scope examples into a generic reaction.
 - Treat every separately labeled product or compound example in a scheme, table, scope, or experimental section as its own reaction record when the source gives reaction-specific support. Never replace enumerated examples with one generic family record.
+- When a source reports an inseparable or separable mixture containing two or more identified products, return each identified product as a separate product value and a separate reaction record. Never use a phrase such as "inseparable mixture of A and B" as one product name. Preserve mixture status and any reported product ratio under Other reaction conditions or Yield, as applicable.
 - For every field, return field_metadata containing a confidence from 0 to 1, source filename, original page number, a short exact supporting quote, and bbox.
 - Confidence must measure support in the supplied source, not general chemical plausibility. Use 0 when the field is empty.
 - The quote must be short enough to locate in the PDF text. If unavailable, use empty strings for source_file, page, and quote.
@@ -108,7 +133,10 @@ Application requirements for hybrid PDF extraction:
 - Local solvent, reagent/catalyst, and reaction-condition lookup vocabularies are non-exhaustive. Extract every source-supported value even when it may not appear in a controlled list; never omit, reject, or lower confidence solely because a value is uncommon or absent from a lookup.
 - Populate yield only when the cited evidence explicitly contains the word "yield" (including forms such as yielded, yields, or yield%). A bare percentage may be a concentration, solvent composition, selectivity, conversion, or another measurement and is not sufficient yield evidence.
 - When more than one numeric reaction temperature is reported in the same unit, return one range ordered from the lowest to the highest value. Do not infer a numeric value for room temperature or another qualitative temperature.
+- Format a reaction-temperature range with "-" instead of the word "to", for example "0 °C - room temperature".
 - For reaction_stages, return only the explicitly supported stage count, or "Undetermined" when the source cannot establish it. Do not add work-up, purification, extraction, crystallization, solvent exchange, or repeated reagent-addition operations as stages.
+- For a reaction with two or more explicitly supported stages, return one ordered stage_details entry per stage. Each entry must identify that stage's starting materials, product or intermediate, concise transformation description, confidence, and exact source evidence. Return [] when a stage breakdown is not explicitly supported; never invent a missing intermediate merely to match the stage count.
+- Never return a bare number such as "14" as a product. A numeric source label must include an explicit role, such as "compound 14", and must be formed by a source-supported preparative transformation. Atom assignments and locants such as H14, C14, H-14, C-14, or NMR peak annotations are characterization data, not products or reactions.
 """
 
 DUPLICATE_DECISION_SCHEMA = {
@@ -240,6 +268,18 @@ def _format_reaction_chemical_typography(reaction):
             formatted[field] = [format_chemical_subscripts(item) for item in value]
         elif isinstance(value, str):
             formatted[field] = format_chemical_subscripts(value)
+    formatted['stage_details'] = []
+    for item in reaction.get('stage_details') or []:
+        stage = dict(item)
+        stage['starting_materials'] = [
+            format_chemical_subscripts(value)
+            for value in item.get('starting_materials') or []
+        ]
+        stage['products'] = [
+            format_chemical_subscripts(value)
+            for value in item.get('products') or []
+        ]
+        formatted['stage_details'].append(stage)
     return formatted
 
 
@@ -260,7 +300,22 @@ TEMPERATURE_VALUE_PATTERN = re.compile(
     rf'(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*{DEGREE_SIGN}?\s*(C|K|F)\b',
     re.I,
 )
+TEMPERATURE_TO_RANGE_PATTERN = re.compile(
+    rf'(?P<left>(?:[+-]?\d+(?:\.\d+)?\s*{DEGREE_SIGN}?\s*[CKF]|room temperature|ambient temperature))'
+    rf'\s+to\s+'
+    rf'(?P<right>(?:[+-]?\d+(?:\.\d+)?\s*{DEGREE_SIGN}?\s*[CKF]|room temperature|ambient temperature))',
+    re.I,
+)
 YIELD_EVIDENCE_PATTERN = re.compile(r'\byield(?:ed|ing|s)?\b', re.I)
+BARE_NUMERIC_PRODUCT_PATTERN = re.compile(r'^\(?\d+\)?$')
+MIXTURE_PRODUCT_PREFIX_PATTERN = re.compile(
+    r'^(?:an?\s+)?(?:(?:inseparable|separable)\s+)?mixture\s+of\s+',
+    re.I,
+)
+MIXTURE_RATIO_SUFFIX_PATTERN = re.compile(
+    r'\s+(?:in\s+)?(?:an?\s+)?(?:exo[:/]endo\s+)?ratio\b.*$',
+    re.I,
+)
 
 
 def _format_number(value):
@@ -270,6 +325,7 @@ def _format_number(value):
 def normalize_temperature_range(value):
     """Collapse multiple explicit temperatures in one unit to lowest-to-highest."""
     text = str(value or '').strip()
+    text = TEMPERATURE_TO_RANGE_PATTERN.sub(r'\g<left> - \g<right>', text)
     matches = TEMPERATURE_VALUE_PATTERN.findall(text)
     if len(matches) < 2:
         return text
@@ -294,11 +350,61 @@ def _blank_field_metadata():
     }
 
 
+def split_product_values(products):
+    """Split only explicit source mixture phrases into distinct product values."""
+    separated = []
+    seen = set()
+    for raw_value in products or []:
+        value = str(raw_value or '').strip()
+        if not value:
+            continue
+        values = [value]
+        prefix_match = MIXTURE_PRODUCT_PREFIX_PATTERN.match(value)
+        if prefix_match:
+            mixture = MIXTURE_RATIO_SUFFIX_PATTERN.sub('', value[prefix_match.end():])
+            mixture = mixture.strip(' .;,')
+            parts = [
+                part.strip(' .;,')
+                for part in re.split(r'\s+(?:and|&)\s+|\s+\+\s+', mixture, flags=re.I)
+            ]
+            if len(parts) >= 2 and all(parts):
+                values = parts
+        for product in values:
+            if BARE_NUMERIC_PRODUCT_PATTERN.fullmatch(product):
+                continue
+            key = product.casefold()
+            if key not in seen:
+                seen.add(key)
+                separated.append(product)
+    return separated
+
+
+def _separate_product_candidates(reaction):
+    """Return one reaction candidate per product while retaining shared evidence."""
+    products = split_product_values(reaction.get('products') or [])
+    candidates = []
+    for product in products:
+        candidate = dict(reaction)
+        candidate['products'] = [product]
+        candidates.append(candidate)
+    return candidates
+
+
 def _validate_and_normalize_reaction_fields(reaction):
     """Apply deterministic safeguards after AI extraction and before consolidation."""
     normalized = dict(reaction)
     metadata = dict(reaction.get('field_metadata') or {})
     normalized['field_metadata'] = metadata
+    products = split_product_values(reaction.get('products') or [])
+    normalized['products'] = products
+    if not products:
+        metadata['products'] = _blank_field_metadata()
+    stage_details = []
+    for item in reaction.get('stage_details') or []:
+        stage = dict(item)
+        stage['products'] = split_product_values(item.get('products') or [])
+        stage_details.append(stage)
+    normalized['stage_details'] = stage_details
     normalized['reaction_temperature'] = normalize_temperature_range(
         reaction.get('reaction_temperature') or ''
     )
@@ -348,8 +454,25 @@ def select_keyword_pages_from_text(page_texts, keywords=None, context_pages=None
         lines = [' '.join(line.split()) for line in str(source_text or '').splitlines()]
         page_text = '\n'.join(lines).lower()
         normalized_page_texts.append(page_text)
-        if any(len(line) <= 60 and re.search(r'\breferences\b', line, re.I) for line in lines):
-            references_page = min(references_page, index)
+        reference_line = next(
+            (
+                position
+                for position, line in enumerate(lines)
+                if len(line) <= 60 and re.search(r'\breferences\b', line, re.I)
+            ),
+            None,
+        )
+        if reference_line is not None:
+            before_references = '\n'.join(lines[:reference_line]).lower()
+            has_reaction_content_before_references = (
+                bool(VISUAL_CONTENT_PATTERN.search(before_references))
+                or any(re.search(pattern, before_references, re.I) for pattern in reaction_signatures)
+                or sum(bool(re.search(pattern, before_references, re.I)) for pattern in recipe_markers) >= 3
+            )
+            # Keep a mixed final content/references page so schemes or procedures
+            # above the References heading are not discarded with later citations.
+            boundary = index + 1 if has_reaction_content_before_references else index
+            references_page = min(references_page, boundary)
         if any(re.search(pattern, page_text, re.I) for pattern in reaction_signatures):
             strong_hits.add(index)
         recipe_score = sum(bool(re.search(pattern, page_text, re.I)) for pattern in recipe_markers)
@@ -412,6 +535,7 @@ def adaptive_chunk_page_numbers(
     page_numbers,
     page_texts,
     *,
+    visual_page_candidates=None,
     max_pages=None,
     single_call_max_pages=None,
     single_call_max_chars=None,
@@ -438,6 +562,18 @@ def adaptive_chunk_page_numbers(
     overlap_pages = settings.AI_CHUNK_OVERLAP_PAGES if overlap_pages is None else overlap_pages
     overlap_pages = max(0, min(2, int(overlap_pages)))
     chunk_page_limit = min(max_pages, single_call_max_pages)
+    selected_visual_pages = set(visual_page_candidates or []).intersection(pages)
+    reaction_dense = len(selected_visual_pages) >= 2
+
+    if reaction_dense:
+        dense_page_limit = max(1, settings.AI_REACTION_DENSE_CHUNK_PAGES)
+        # Dense visual pages generate much larger structured responses. Divide
+        # them without overlap so independent chunks can run concurrently.
+        if len(pages) > dense_page_limit:
+            return [
+                pages[index:index + dense_page_limit]
+                for index in range(0, len(pages), dense_page_limit)
+            ]
 
     def page_length(page):
         return len(page_texts[page]) if 0 <= page < len(page_texts) else 0
@@ -500,6 +636,81 @@ def build_pdf_chunk(pdf_path, page_numbers):
     finally:
         chunk.close()
         source.close()
+
+
+def _expanded_clip(page, rectangle, horizontal_margin=16, vertical_margin=24):
+    clip = fitz.Rect(
+        rectangle.x0 - horizontal_margin,
+        rectangle.y0 - vertical_margin,
+        rectangle.x1 + horizontal_margin,
+        rectangle.y1 + vertical_margin,
+    )
+    return clip & page.rect
+
+
+def _reaction_scheme_rectangles(page):
+    """Locate likely reaction figures without sending the complete PDF page."""
+    page_area = max(1, page.rect.width * page.rect.height)
+    rectangles = []
+    for image in page.get_images(full=True):
+        for rectangle in page.get_image_rects(image[0]):
+            width_ratio = rectangle.width / max(1, page.rect.width)
+            height_ratio = rectangle.height / max(1, page.rect.height)
+            area_ratio = (rectangle.width * rectangle.height) / page_area
+            if width_ratio >= 0.25 and height_ratio >= 0.05 and area_ratio >= 0.015:
+                rectangles.append(_expanded_clip(page, rectangle))
+    if rectangles:
+        return rectangles
+
+    # Vector-only schemes may have no embedded raster image. Crop a bounded
+    # region immediately above a short Scheme caption rather than the full page.
+    for block in page.get_text('blocks', sort=True):
+        block_text = ' '.join(str(block[4] or '').split())
+        if len(block_text) > 240 or not re.match(r'(?i)^scheme\s+\d+[a-z]?\b', block_text):
+            continue
+        caption = fitz.Rect(block[:4])
+        rectangles.append(fitz.Rect(
+            page.rect.x0 + page.rect.width * 0.03,
+            max(page.rect.y0, caption.y0 - page.rect.height * 0.38),
+            page.rect.x1 - page.rect.width * 0.03,
+            min(page.rect.y1, caption.y1 + 30),
+        ))
+    return rectangles
+
+
+def build_reaction_scheme_crops(pdf_path, page_numbers):
+    """Render only reaction-scheme regions and retain original-page mapping."""
+    document = fitz.open(pdf_path)
+    crops = []
+    try:
+        for page_index in page_numbers:
+            page = document[page_index]
+            for region_number, clip in enumerate(_reaction_scheme_rectangles(page), start=1):
+                scale = min(
+                    2.5,
+                    1600 / max(1, clip.width),
+                    1600 / max(1, clip.height),
+                )
+                pixmap = page.get_pixmap(
+                    matrix=fitz.Matrix(max(1.5, scale), max(1.5, scale)),
+                    clip=clip,
+                    alpha=False,
+                    annots=False,
+                )
+                crops.append({
+                    'page_index': page_index,
+                    'region_number': region_number,
+                    'bbox': {
+                        'left': clip.x0 / page.rect.width,
+                        'top': clip.y0 / page.rect.height,
+                        'right': clip.x1 / page.rect.width,
+                        'bottom': clip.y1 / page.rect.height,
+                    },
+                    'png_bytes': pixmap.tobytes('png'),
+                })
+    finally:
+        document.close()
+    return crops
 
 
 TABLE_CAPTION_PATTERN = re.compile(r'^\s*table\s+s?\d+[.:\s]', re.I)
@@ -709,12 +920,19 @@ def _client_and_model():
             api_key=os.environ['AZURE_OPENAI_API_KEY'],
             api_version=os.environ.get('AZURE_OPENAI_RESPONSES_API_VERSION', '2025-03-01-preview'),
             azure_endpoint=azure_endpoint,
+            timeout=settings.AI_REQUEST_TIMEOUT_SECONDS,
+            # Retries are handled locally so every attempt can be audited.
+            max_retries=0,
         ), os.environ['AZURE_OPENAI_DEPLOYMENT']
 
     if not os.environ.get('OPENAI_API_KEY', '').strip():
         raise RuntimeError('Set OPENAI_API_KEY or the Azure OpenAI settings in .env.')
     model = os.environ.get('OPENAI_MODEL') or os.environ.get('MODEL_NAME') or 'gpt-4.1'
-    return OpenAI(api_key=os.environ['OPENAI_API_KEY']), model
+    return OpenAI(
+        api_key=os.environ['OPENAI_API_KEY'],
+        timeout=settings.AI_REQUEST_TIMEOUT_SECONDS,
+        max_retries=0,
+    ), model
 
 
 def _estimated_cost(prompt_tokens, completion_tokens):
@@ -725,7 +943,24 @@ def _estimated_cost(prompt_tokens, completion_tokens):
     return value.quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
 
 
-def _save_usage(response, *, job, document, phase, chunk_number, model, duration_ms=0):
+def _usage_reasoning_tokens(usage):
+    details = getattr(usage, 'output_tokens_details', None)
+    if isinstance(details, dict):
+        return int(details.get('reasoning_tokens', 0) or 0)
+    return int(getattr(details, 'reasoning_tokens', 0) or 0)
+
+
+def _save_usage(
+    response,
+    *,
+    job,
+    document,
+    phase,
+    chunk_number,
+    model,
+    duration_ms=0,
+    attempt_number=1,
+):
     usage = getattr(response, 'usage', None)
     prompt_tokens = int(getattr(usage, 'input_tokens', 0) or 0)
     completion_tokens = int(getattr(usage, 'output_tokens', 0) or 0)
@@ -736,10 +971,39 @@ def _save_usage(response, *, job, document, phase, chunk_number, model, duration
         phase=phase,
         chunk_number=chunk_number,
         model_name=model,
+        attempt_number=attempt_number,
+        status=AITokenUsage.Status.COMPLETED,
         prompt_tokens=prompt_tokens,
         completion_tokens=completion_tokens,
+        reasoning_tokens=_usage_reasoning_tokens(usage),
         total_tokens=total_tokens,
         estimated_cost_usd=_estimated_cost(prompt_tokens, completion_tokens),
+        duration_ms=max(0, int(duration_ms or 0)),
+    )
+
+
+def _save_failed_attempt(
+    error,
+    *,
+    job,
+    document,
+    phase,
+    chunk_number,
+    model,
+    duration_ms,
+    attempt_number,
+):
+    is_timeout = 'timeout' in type(error).__name__.casefold()
+    AITokenUsage.objects.create(
+        job=job,
+        document=document,
+        phase=phase,
+        chunk_number=chunk_number,
+        model_name=model,
+        attempt_number=attempt_number,
+        status=AITokenUsage.Status.TIMEOUT if is_timeout else AITokenUsage.Status.FAILED,
+        error_type=type(error).__name__[:120],
+        error_message=str(error)[:2000],
         duration_ms=max(0, int(duration_ms or 0)),
     )
 
@@ -764,6 +1028,10 @@ def _reasoning_options(model):
     normalized_model = str(model or '').lower().replace('_', '-')
     if not re.search(r'(^|-)gpt-?5(?:[.-]|$)|(^|-)o[134](?:[.-]|$)', normalized_model):
         return {}
+    # GPT-5.5 deployments reject "minimal" and expose "none" as their
+    # lowest-latency reasoning level. Keep older environment files compatible.
+    if effort == 'minimal' and re.search(r'(^|-)gpt-?5[.-]5(?:[.-]|$)', normalized_model):
+        effort = 'none'
     return {'reasoning': {'effort': effort}}
 
 
@@ -786,8 +1054,86 @@ def _create_structured_response(client, model, content, *, instructions, schema,
     return response, round((time.perf_counter() - started) * 1000)
 
 
+def _retryable_ai_error(error):
+    error_name = type(error).__name__.casefold()
+    status_code = int(getattr(error, 'status_code', 0) or 0)
+    return (
+        'timeout' in error_name
+        or 'connection' in error_name
+        or 'ratelimit' in error_name
+        or status_code == 429
+        or status_code >= 500
+    )
+
+
+def _create_structured_response_with_retries(
+    client,
+    model,
+    content,
+    *,
+    instructions,
+    schema,
+    schema_name,
+):
+    attempts = []
+    for attempt_number in range(1, settings.AI_MAX_RETRIES + 2):
+        started = time.perf_counter()
+        try:
+            response, duration_ms = _create_structured_response(
+                client,
+                model,
+                content,
+                instructions=instructions,
+                schema=schema,
+                schema_name=schema_name,
+            )
+        except Exception as error:
+            duration_ms = round((time.perf_counter() - started) * 1000)
+            attempts.append({
+                'attempt_number': attempt_number,
+                'duration_ms': duration_ms,
+                'error': error,
+            })
+            if attempt_number > settings.AI_MAX_RETRIES or not _retryable_ai_error(error):
+                return None, attempts, error
+            continue
+        attempts.append({
+            'attempt_number': attempt_number,
+            'duration_ms': duration_ms,
+            'response': response,
+        })
+        return response, attempts, None
+    return None, attempts, RuntimeError('AI request did not produce a response.')
+
+
+def _record_ai_attempts(attempts, *, job, document, phase, chunk_number, model):
+    for attempt in attempts:
+        if attempt.get('response') is not None:
+            _save_usage(
+                attempt['response'],
+                job=job,
+                document=document,
+                phase=phase,
+                chunk_number=chunk_number,
+                model=model,
+                duration_ms=attempt['duration_ms'],
+                attempt_number=attempt['attempt_number'],
+            )
+        else:
+            _save_failed_attempt(
+                attempt['error'],
+                job=job,
+                document=document,
+                phase=phase,
+                chunk_number=chunk_number,
+                model=model,
+                duration_ms=attempt['duration_ms'],
+                attempt_number=attempt['attempt_number'],
+            )
+
+
 def _call_responses(client, model, content, *, job, document=None, phase, chunk_number=1):
-    response, duration_ms = _create_structured_response(
+    response, attempts, error = _create_structured_response_with_retries(
         client,
         model,
         content,
@@ -795,15 +1141,16 @@ def _call_responses(client, model, content, *, job, document=None, phase, chunk_
         schema=REACTION_SCHEMA,
         schema_name='chemical_reaction_extraction',
     )
-    _save_usage(
-        response,
+    _record_ai_attempts(
+        attempts,
         job=job,
         document=document,
         phase=phase,
         chunk_number=chunk_number,
         model=model,
-        duration_ms=duration_ms,
     )
+    if error:
+        raise error
     return _response_json(response)
 
 
@@ -833,7 +1180,11 @@ def extract_document_reactions(job, document, client, model):
     visual_page_candidates = set(visual_page_candidates)
 
     candidates = []
-    chunks = adaptive_chunk_page_numbers(selected_pages, page_texts)
+    chunks = adaptive_chunk_page_numbers(
+        selected_pages,
+        page_texts,
+        visual_page_candidates=visual_page_candidates,
+    )
     document._extraction_chunk_count = len(chunks)
     chunk_requests = []
     for chunk_number, page_numbers in enumerate(chunks, start=1):
@@ -841,18 +1192,28 @@ def extract_document_reactions(job, document, client, model):
         native_context = '\n\n'.join(stored_page_sections[page] for page in page_numbers)
         visual_pages = [page for page in page_numbers if page in visual_page_candidates]
         content = []
-        if visual_pages:
-            pdf_bytes = build_pdf_chunk(document.file.path, visual_pages)
-            filename = f'{os.path.splitext(document.original_name)[0]}-visual-pages.pdf'
+        visual_crops = build_reaction_scheme_crops(document.file.path, visual_pages)
+        for crop_number, crop in enumerate(visual_crops, start=1):
+            bbox = crop['bbox']
             content.append({
-                'type': 'input_file',
-                'filename': filename,
-                'file_data': 'data:application/pdf;base64,' + base64.b64encode(pdf_bytes).decode('ascii'),
+                'type': 'input_text',
+                'text': (
+                    f'VISUAL CROP {crop_number}: original page {crop["page_index"] + 1}, '
+                    f'original normalized bbox '
+                    f'({bbox["left"]:.5f}, {bbox["top"]:.5f}, '
+                    f'{bbox["right"]:.5f}, {bbox["bottom"]:.5f}). '
+                    'Interpret this crop only as visual evidence for that original page. '
+                    'Convert crop-relative locations back to original-page normalized bbox coordinates.'
+                ),
+            })
+            content.append({
+                'type': 'input_image',
+                'image_url': 'data:image/png;base64,' + base64.b64encode(crop['png_bytes']).decode('ascii'),
             })
         visual_mapping = ', '.join(
-            f'visual page {position} = original page {page_index + 1}'
-            for position, page_index in enumerate(visual_pages, start=1)
-        ) or 'No visual pages attached; use the native source text and detected tables.'
+            f'crop {position} = original page {crop["page_index"] + 1}'
+            for position, crop in enumerate(visual_crops, start=1)
+        ) or 'No visual crops attached; use the native source text and detected tables.'
         content.append({
             'type': 'input_text',
             'text': (
@@ -884,7 +1245,7 @@ def extract_document_reactions(job, document, client, model):
         with ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix='reactxtract-ai') as executor:
             future_chunks = {
                 executor.submit(
-                    _create_structured_response,
+                    _create_structured_response_with_retries,
                     client,
                     model,
                     content,
@@ -896,25 +1257,25 @@ def extract_document_reactions(job, document, client, model):
             }
             for future in as_completed(future_chunks):
                 chunk_number = future_chunks[future]
-                response, duration_ms = future.result()
-                _save_usage(
-                    response,
+                response, attempts, error = future.result()
+                _record_ai_attempts(
+                    attempts,
                     job=job,
                     document=document,
                     phase=AITokenUsage.Phase.EXTRACTION,
                     chunk_number=chunk_number,
                     model=model,
-                    duration_ms=duration_ms,
                 )
+                if error:
+                    raise error
                 results[chunk_number] = _response_json(response)
                 _raise_if_discard_requested(job)
 
     for chunk_number in sorted(results):
         result = results[chunk_number]
-        candidates.extend(
-            _prepare_extracted_reaction(reaction)
-            for reaction in result.get('reactions', [])
-        )
+        for reaction in result.get('reactions', []):
+            prepared = _prepare_extracted_reaction(reaction)
+            candidates.extend(_separate_product_candidates(prepared))
     return candidates
 
 
@@ -1029,6 +1390,15 @@ def _merge_original_candidates(candidates):
         # Copy the selected original metadata without allowing AI decisions to alter it.
         merged_metadata[field] = json.loads(json.dumps(metadata))
     merged['field_metadata'] = merged_metadata
+    stage_candidate = max(
+        enumerate(candidates),
+        key=lambda item: (
+            len(item[1].get('stage_details') or []),
+            _metadata_score((item[1].get('field_metadata') or {}).get('reaction_stages') or {}),
+            -item[0],
+        ),
+    )[1]
+    merged['stage_details'] = json.loads(json.dumps(stage_candidate.get('stage_details') or []))
     return merged
 
 
@@ -1038,6 +1408,7 @@ def _candidate_summary(index, candidate):
         'reaction_ids': sorted(_reaction_ids(candidate)),
         'source_locations': [list(location) for location in sorted(_source_locations(candidate))],
         'fields': {field: candidate.get(field) for field in REACTION_FIELDS},
+        'stage_details': candidate.get('stage_details') or [],
     }
 
 
@@ -1046,7 +1417,7 @@ def _call_duplicate_resolution(client, model, pairs, *, job, batch_number):
         'type': 'input_text',
         'text': 'AMBIGUOUS DUPLICATE PAIRS:\n' + json.dumps({'pairs': pairs}, ensure_ascii=False),
     }]
-    response, duration_ms = _create_structured_response(
+    response, attempts, error = _create_structured_response_with_retries(
         client,
         model,
         content,
@@ -1054,15 +1425,16 @@ def _call_duplicate_resolution(client, model, pairs, *, job, batch_number):
         schema=DUPLICATE_DECISION_SCHEMA,
         schema_name='reaction_duplicate_decisions',
     )
-    _save_usage(
-        response,
+    _record_ai_attempts(
+        attempts,
         job=job,
         document=None,
         phase=AITokenUsage.Phase.CONSOLIDATION,
         chunk_number=batch_number,
         model=model,
-        duration_ms=duration_ms,
     )
+    if error:
+        raise error
     return _response_json(response)
 
 

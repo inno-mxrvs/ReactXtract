@@ -26,9 +26,11 @@ from .services import (
     REACTION_SCHEMA,
     _format_reaction_chemical_typography,
     _reasoning_options,
+    _separate_product_candidates,
     _validate_and_normalize_reaction_fields,
     adaptive_chunk_page_numbers,
     build_native_page_context,
+    build_reaction_scheme_crops,
     chunk_page_numbers,
     consolidate_reactions,
     extract_column_aware_text,
@@ -40,8 +42,9 @@ from .services import (
     normalize_temperature_range,
     select_keyword_pages,
     select_keyword_pages_from_text,
+    split_product_values,
 )
-from .views import _find_quote_rectangles, _prepare_draft_reactions, _split_lines
+from .views import _find_quote_rectangles, _prepare_draft_reactions, _split_lines, _split_products
 
 
 TEST_MEDIA_ROOT = Path(__file__).resolve().parents[2] / '.test-media'
@@ -110,6 +113,14 @@ class ReactXtractViewsTests(TestCase):
         self.assertEqual(prepared['field_evidence']['products']['source_file'], '')
         self.assertEqual(prepared['source_evidence'], [])
         self.assertEqual(_split_lines(''), [])
+        self.assertEqual(_split_products('Daedaleanol B (5)\n14'), ['Daedaleanol B (5)'])
+        self.assertEqual(
+            _split_products(
+                'inseparable mixture of (±)-albicanyl acetate (12) '
+                'and (±)-drimenyl acetate (9)'
+            ),
+            ['(±)-albicanyl acetate (12)', '(±)-drimenyl acetate (9)'],
+        )
         self.assertEqual(reaction.reaction_time, '')
         self.assertEqual(reaction.reaction_pressure, '')
         self.assertEqual(reaction.reaction_temperature, '')
@@ -117,6 +128,60 @@ class ReactXtractViewsTests(TestCase):
         self.assertEqual(reaction.reaction_stages, '')
         self.assertEqual(reaction.reaction_description_type, '')
         self.assertEqual(reaction.reaction_yield, '')
+
+    def test_multistage_reaction_shows_nested_source_supported_stages(self):
+        job = ExtractionJob.objects.create(
+            title='Stage-separated paper',
+            status=ExtractionJob.Status.COMPLETED,
+            reaction_count=1,
+        )
+        SourceDocument.objects.create(
+            job=job,
+            original_name='stages.pdf',
+            file=SimpleUploadedFile(
+                'stages.pdf', make_pdf(['Intermediate I was converted to product P.']),
+                content_type='application/pdf',
+            ),
+            page_count=1,
+        )
+        reaction = Reaction.objects.create(
+            job=job,
+            reaction_number=1,
+            products=['Product P'],
+            reaction_stages='2',
+            stage_details=[
+                {
+                    'stage_number': 1,
+                    'description': 'Starting material S was converted to intermediate I.',
+                    'starting_materials': ['Starting material S'],
+                    'products': ['Intermediate I'],
+                    'confidence': 0.94,
+                    'source_file': 'stages.pdf',
+                    'page': '1',
+                    'quote': 'Intermediate I was prepared.',
+                },
+                {
+                    'stage_number': 2,
+                    'description': 'Intermediate I was converted to product P.',
+                    'starting_materials': ['Intermediate I'],
+                    'products': ['Product P'],
+                    'confidence': 0.91,
+                    'source_file': 'stages.pdf',
+                    'page': '1',
+                    'quote': 'Intermediate I was converted to product P.',
+                },
+            ],
+        )
+
+        response = self.client.get(reverse('job_detail', args=[job.id]))
+        display_id = f'{reaction.id:04d}'
+
+        self.assertContains(response, f'RX-{display_id}A')
+        self.assertContains(response, f'RX-{display_id}B')
+        self.assertContains(response, 'Starting material S was converted to intermediate I.')
+        self.assertContains(response, 'Intermediate I was converted to product P.')
+        self.assertContains(response, 'data-stage-target', count=2)
+        self.assertContains(response, 'data-stage-card', count=2)
 
     @patch('main.views.run_extraction')
     def test_extraction_stays_unsaved_until_save_work(self, mocked_extraction):
@@ -138,12 +203,12 @@ class ReactXtractViewsTests(TestCase):
         self.assertContains(response, 'Save work')
         self.assertContains(response, 'data-unsaved-review')
         self.assertContains(response, 'data-draft-resolution', count=2)
-        self.assertContains(response, 'app.js?v=20261030.1')
+        self.assertContains(response, 'app.js?v=20261104.4')
         self.assertContains(response, 'RX-0001')
         self.assertContains(response, '91%')
         self.assertContains(response, 'alt="Rendered source PDF page"')
         self.assertContains(response, reverse('pdf_page_image', args=[job.documents.get().id, 1]))
-        self.assertContains(response, 'styles.css?v=20261030.2')
+        self.assertContains(response, 'styles.css?v=20261104.1')
         self.assertContains(response, 'data-individual-highlights', count=5)
         self.assertContains(response, 'data-value-highlights', count=5)
         self.assertContains(response, reverse('pdf_document', args=[job.documents.get().id]))
@@ -365,6 +430,39 @@ class ReactXtractViewsTests(TestCase):
         self.assertIn('dichloromethane', matched_text.lower())
         self.assertNotIn('tetrahydrofuran', matched_text.lower())
 
+    def test_highlight_does_not_match_a_word_inside_another_chemical_name(self):
+        pdf = fitz.open(stream=make_pdf([
+            'The intermediate was converted using in situ generated trifluoroperacetic acid.'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'generated trifluoroperacetic acid',
+                'acetic anhydride',
+            )
+        finally:
+            pdf.close()
+
+        self.assertEqual(rectangles, [])
+
+    def test_exact_multiword_value_highlights_the_complete_phrase(self):
+        pdf = fitz.open(stream=make_pdf([
+            'Acetic anhydride was added before trifluoroperacetic acid was generated.'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'Acetic anhydride was added',
+                'acetic anhydride',
+            )
+            matched_text = ' '.join(page.get_textbox(quad.rect) for quad in rectangles)
+        finally:
+            pdf.close()
+
+        self.assertEqual(matched_text.lower(), 'acetic anhydride')
+
     def test_compound_label_highlight_uses_role_context_not_another_number(self):
         pdf = fitz.open(stream=make_pdf([
             'drimane-8,11-diol was analyzed. The precursor 11 was then converted.'
@@ -383,7 +481,23 @@ class ReactXtractViewsTests(TestCase):
         self.assertIn('precursor 11', matched_text.lower())
         self.assertNotIn('8,11-diol', matched_text.lower())
 
-    def test_image_only_product_prefers_visual_bbox_over_unrelated_quote(self):
+    def test_bare_numeric_product_does_not_highlight_atom_assignments(self):
+        pdf = fitz.open(stream=make_pdf([
+            'NMR assignments included H14, C14, and atom label (14).'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'NMR assignments included H14 and C14',
+                '14',
+            )
+        finally:
+            pdf.close()
+
+        self.assertEqual(rectangles, [])
+
+    def test_image_only_product_is_not_highlighted(self):
         pdf = fitz.open(stream=make_pdf([
             'The reaction afforded an exo:endo ratio of 65:35.'
         ]), filetype='pdf')
@@ -394,24 +508,93 @@ class ReactXtractViewsTests(TestCase):
                 'afforded an exo:endo ratio of 65:35',
                 f'({chr(177)})-drimenyl acetate (9)',
                 ['0.10', '0.60', '0.40', '0.80'],
-            )
-            rectangle = fitz.Rect(rectangles[0])
-            matched_text = page.get_textbox(rectangle)
-            expected = fitz.Rect(
-                0.10 * page.rect.width,
-                0.60 * page.rect.height,
-                0.40 * page.rect.width,
-                0.80 * page.rect.height,
+                'products',
             )
         finally:
             pdf.close()
 
-        self.assertEqual(len(rectangles), 1)
-        self.assertEqual(
-            tuple(round(value, 2) for value in rectangle),
-            tuple(round(value, 2) for value in expected),
-        )
-        self.assertNotIn('65:35', matched_text)
+        self.assertEqual(rectangles, [])
+
+    def test_image_only_value_rejects_bbox_over_unrelated_paragraph(self):
+        pdf = fitz.open(stream=make_pdf([
+            'Activation of the hydroxyl group with methanesulfonyl chloride followed by '
+            'base treatment led to a mixture of alkenes with an exo endo ratio.'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'Scheme product label',
+                f'({chr(177)})-albicanyl acetate (12)',
+                ['0.05', '0.05', '0.95', '0.30'],
+            )
+        finally:
+            pdf.close()
+
+        self.assertEqual(rectangles, [])
+
+    def test_textual_conditions_never_fall_back_to_a_visual_scheme_bbox(self):
+        pdf = fitz.open(stream=make_pdf(['Narrative text above a raster reaction scheme.']), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'global deprotection under acidic conditions',
+                'global deprotection of two Boc groups under Acidic conditions',
+                ['0.10', '0.60', '0.40', '0.80'],
+                'conditions',
+            )
+        finally:
+            pdf.close()
+
+        self.assertEqual(rectangles, [])
+
+    def test_normalized_temperature_does_not_highlight_room_temperature(self):
+        pdf = fitz.open(stream=make_pdf([
+            'The mixture was stirred at room temperature for one hour.'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'stirred at room temperature',
+                f'20{chr(176)}C',
+                ['0.05', '0.05', '0.95', '0.30'],
+            )
+        finally:
+            pdf.close()
+
+        self.assertEqual(rectangles, [])
+
+    def test_joined_chemical_name_does_not_highlight_differently_spaced_words(self):
+        pdf = fitz.open(stream=make_pdf([
+            'Treatment with thionyl chloride and pyridine afforded the product.'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'Treatment with thionyl chloride',
+                'thionylchloride',
+                ['0.05', '0.05', '0.95', '0.30'],
+            )
+        finally:
+            pdf.close()
+
+        self.assertEqual(rectangles, [])
+
+    def test_py_abbreviation_highlights_exact_pyridine_source_word(self):
+        pdf = fitz.open(stream=make_pdf([
+            'Thionyl chloride and pyridine afforded the product.'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(page, '', 'Py')
+            matched_text = ' '.join(page.get_textbox(quad.rect) for quad in rectangles)
+        finally:
+            pdf.close()
+
+        self.assertEqual(matched_text, 'pyridine')
 
     def test_pdf_document_is_served_inline_for_native_embed(self):
         job = ExtractionJob.objects.create(title='Embedded PDF test')
@@ -720,6 +903,30 @@ class ChunkingTests(TestCase):
         self.assertEqual(page_count, 5)
         self.assertEqual(selected, [0, 1, 2])
 
+    def test_reaction_content_before_references_keeps_the_mixed_page(self):
+        selected = select_keyword_pages_from_text([
+            'Introduction.',
+            'Scheme 2. Product-forming reaction.',
+            'Scheme 3. Final coupling.\nReferences\n1. Citation.',
+            '2. Citation only.',
+        ], keywords=[], context_pages=1)
+
+        self.assertEqual(selected, [0, 1, 2])
+
+    @override_settings(AI_ADAPTIVE_CHUNKING=True, AI_REACTION_DENSE_CHUNK_PAGES=2)
+    def test_visual_dense_pages_are_split_without_overlap_for_parallel_calls(self):
+        pages = ['Scheme and reaction text' for _ in range(3)]
+
+        self.assertEqual(
+            adaptive_chunk_page_numbers(
+                [0, 1, 2],
+                pages,
+                visual_page_candidates=[0, 1, 2],
+                max_pages=10,
+            ),
+            [[0, 1], [2]],
+        )
+
     def test_runtime_instructions_use_strict_rules_and_hybrid_appendix(self):
         instructions = get_extraction_instructions()
         self.assertIn('Experimental Procedure', instructions)
@@ -745,6 +952,7 @@ class ChunkingTests(TestCase):
         self.assertIn('reaction_temperature', schema_fields)
         self.assertIn('reaction_description_type', schema_fields)
         self.assertIn('yield', schema_fields)
+        self.assertIn('stage_details', schema_fields)
 
 
 class OptionalLookupNormalizationTests(TestCase):
@@ -827,6 +1035,14 @@ class OptionalLookupNormalizationTests(TestCase):
         self.assertEqual(prepared['solvents'], ['dichloromethane', 'unlisted solvent'])
         self.assertEqual(prepared['reagents'], ['triethylamine', 'unlisted reagent'])
         self.assertEqual(prepared['catalysts'], ['4-dimethylaminopyridine'])
+        self.assertEqual(
+            prepared['field_evidence']['reagents']['value_aliases'][0],
+            {'display': 'triethylamine', 'source': 'Et3N'},
+        )
+        self.assertEqual(
+            prepared['field_evidence']['solvents']['value_aliases'][0],
+            {'display': 'dichloromethane', 'source': 'DCM'},
+        )
         self.assertTrue(prepared['lookup_metadata']['non_exhaustive'])
         self.assertFalse(prepared['lookup_metadata']['solvents'][1]['matched'])
         self.assertEqual(prepared['lookup_metadata']['reagents'][0]['code'], 'I2')
@@ -838,6 +1054,69 @@ class OptionalLookupNormalizationTests(TestCase):
 
 
 class ReactionFieldValidationTests(TestCase):
+    def test_explicit_product_mixture_is_split_into_individual_values(self):
+        products = split_product_values([
+            'inseparable mixture of (±)-albicanyl acetate (12) and '
+            '(±)-drimenyl acetate (9) in a ratio of 6.2 to 3.8',
+        ])
+
+        self.assertEqual(
+            products,
+            ['(±)-albicanyl acetate (12)', '(±)-drimenyl acetate (9)'],
+        )
+
+    def test_product_name_containing_and_is_not_split_without_mixture_prefix(self):
+        product = 'benzene and pyridine fused product 7'
+
+        self.assertEqual(split_product_values([product]), [product])
+
+    def test_each_product_becomes_a_separate_candidate_with_shared_fields(self):
+        reaction = {
+            'products': ['product A', 'product B'],
+            'reagents': ['pyridine'],
+            'reaction_time': '1 h',
+        }
+
+        candidates = _separate_product_candidates(reaction)
+
+        self.assertEqual([item['products'] for item in candidates], [['product A'], ['product B']])
+        self.assertEqual([item['reagents'] for item in candidates], [['pyridine'], ['pyridine']])
+        self.assertEqual([item['reaction_time'] for item in candidates], ['1 h', '1 h'])
+
+    def test_bare_numeric_product_is_removed_but_named_product_is_preserved(self):
+        reaction = {
+            'products': ['Daedaleanol B (5)', '14'],
+            'reaction_temperature': '',
+            'stage_details': [{
+                'stage_number': 1,
+                'products': ['14'],
+            }],
+            'field_metadata': {
+                'products': {'confidence': 0.99, 'quote': 'H14 and C14 assignments.'},
+            },
+        }
+
+        normalized = _validate_and_normalize_reaction_fields(reaction)
+
+        self.assertEqual(normalized['products'], ['Daedaleanol B (5)'])
+        self.assertEqual(normalized['stage_details'][0]['products'], [])
+        self.assertEqual(normalized['field_metadata']['products']['confidence'], 0.99)
+
+    def test_numeric_only_product_clears_product_evidence(self):
+        reaction = {
+            'products': ['14'],
+            'reaction_temperature': '',
+            'field_metadata': {
+                'products': {'confidence': 0.99, 'quote': 'H14 and C14 assignments.'},
+            },
+        }
+
+        normalized = _validate_and_normalize_reaction_fields(reaction)
+
+        self.assertEqual(normalized['products'], [])
+        self.assertEqual(normalized['field_metadata']['products']['confidence'], 0)
+        self.assertEqual(normalized['field_metadata']['products']['quote'], '')
+
     def test_bare_percentage_is_not_accepted_as_yield(self):
         degree = chr(176)
         reaction = {
@@ -882,6 +1161,12 @@ class ReactionFieldValidationTests(TestCase):
             f'-10{chr(8211)}20 {degree}C',
         )
         self.assertEqual(normalize_temperature_range('room temperature'), 'room temperature')
+
+    def test_temperature_range_replaces_to_with_hyphen(self):
+        self.assertEqual(
+            normalize_temperature_range(f'0 {chr(176)}C to room temperature'),
+            f'0 {chr(176)}C - room temperature',
+        )
 
 
 class NativePdfExtractionTests(TestCase):
@@ -929,6 +1214,38 @@ class NativePdfExtractionTests(TestCase):
 
         self.assertEqual(selected, [0, 1, 2])
 
+    @override_settings(MEDIA_ROOT=TEST_MEDIA_ROOT, AI_INPUT_MODE='hybrid')
+    @patch('main.services._call_responses', return_value={'reactions': []})
+    def test_hybrid_request_sends_scheme_crop_images_not_full_pdf_pages(self, mocked_call):
+        job = ExtractionJob.objects.create(title='Cropped visual extraction')
+        upload = SimpleUploadedFile(
+            'scheme.pdf',
+            make_pdf(['Scheme 1. Reagents and conditions. Product 2 was obtained.']),
+            content_type='application/pdf',
+        )
+        document = SourceDocument.objects.create(job=job, original_name='scheme.pdf', file=upload)
+
+        extract_document_reactions(job, document, object(), 'test-model')
+
+        sent_content = mocked_call.call_args.args[2]
+        self.assertIn('input_image', [item['type'] for item in sent_content])
+        self.assertNotIn('input_file', [item['type'] for item in sent_content])
+        self.assertTrue(any('original normalized bbox' in item.get('text', '') for item in sent_content))
+
+    def test_scheme_crop_builder_returns_original_page_mapping(self):
+        with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as handle:
+            path = handle.name
+            handle.write(make_pdf(['Scheme 1. Product-forming reaction.']))
+        try:
+            crops = build_reaction_scheme_crops(path, [0])
+        finally:
+            Path(path).unlink(missing_ok=True)
+
+        self.assertEqual(len(crops), 1)
+        self.assertEqual(crops[0]['page_index'], 0)
+        self.assertGreater(len(crops[0]['png_bytes']), 100)
+        self.assertLess(crops[0]['bbox']['top'], crops[0]['bbox']['bottom'])
+
     @override_settings(
         MEDIA_ROOT=TEST_MEDIA_ROOT,
         AI_INPUT_MODE='text',
@@ -962,10 +1279,48 @@ class NativePdfExtractionTests(TestCase):
             [1234, 1234, 1234],
         )
 
+    @override_settings(
+        MEDIA_ROOT=TEST_MEDIA_ROOT,
+        AI_INPUT_MODE='text',
+        AI_MAX_RETRIES=1,
+    )
+    @patch('main.services._create_structured_response')
+    def test_timeout_retry_and_reasoning_tokens_are_recorded(self, mocked_create):
+        usage = SimpleNamespace(
+            input_tokens=10,
+            output_tokens=7,
+            total_tokens=17,
+            output_tokens_details=SimpleNamespace(reasoning_tokens=5),
+        )
+        response = SimpleNamespace(status='completed', output_text='{"reactions": []}', usage=usage)
+        mocked_create.side_effect = [TimeoutError('request timed out'), (response, 250)]
+        job = ExtractionJob.objects.create(title='Retried extraction')
+        document = SourceDocument.objects.create(
+            job=job,
+            original_name='retry.pdf',
+            file=SimpleUploadedFile(
+                'retry.pdf',
+                make_pdf(['Experimental Procedure. Product A was afforded in 80% yield.']),
+                content_type='application/pdf',
+            ),
+        )
+
+        extract_document_reactions(job, document, object(), 'gpt-5.5')
+
+        attempts = list(job.token_usages.order_by('attempt_number'))
+        self.assertEqual([item.status for item in attempts], ['timeout', 'completed'])
+        self.assertEqual([item.attempt_number for item in attempts], [1, 2])
+        self.assertEqual(attempts[1].reasoning_tokens, 5)
+
     @override_settings(AI_REASONING_EFFORT='low')
     def test_reasoning_effort_is_only_sent_to_compatible_model_names(self):
         self.assertEqual(_reasoning_options('gpt-5.5'), {'reasoning': {'effort': 'low'}})
         self.assertEqual(_reasoning_options('gpt-4.1'), {})
+
+    @override_settings(AI_REASONING_EFFORT='minimal')
+    def test_gpt_5_5_maps_unsupported_minimal_reasoning_to_none(self):
+        self.assertEqual(_reasoning_options('gpt-5.5'), {'reasoning': {'effort': 'none'}})
+        self.assertEqual(_reasoning_options('gpt-5.2'), {'reasoning': {'effort': 'minimal'}})
 
     def test_two_column_text_is_emitted_column_by_column(self):
         document = fitz.open()

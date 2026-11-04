@@ -98,20 +98,34 @@ extractionForm?.addEventListener('submit', () => {
 
 window.setTimeout(() => document.querySelectorAll('.toast').forEach((toast) => toast.remove()), 7000);
 
-const reactionTreeNodes = [...document.querySelectorAll('[data-reaction-target]')];
+const reactionTreeNodes = [...document.querySelectorAll('.tree-node[data-reaction-target]')];
+const stageTreeNodes = [...document.querySelectorAll('[data-stage-target]')];
 const reactionPanels = [...document.querySelectorAll('[data-reaction-panel]')];
 
-const showReactionPanel = (targetId) => {
+const showReactionPanel = (targetId, selectedStageNode = null) => {
     reactionPanels.forEach((panel) => panel.classList.toggle('is-hidden', panel.id !== targetId));
     reactionTreeNodes.forEach((node) => {
         const active = node.dataset.reactionTarget === targetId;
         node.classList.toggle('is-active', active);
         node.setAttribute('aria-selected', String(active));
     });
-    document.querySelector(`#${targetId} input, #${targetId} textarea`)?.focus({preventScroll: true});
+    stageTreeNodes.forEach((node) => {
+        const active = node === selectedStageNode;
+        node.classList.toggle('is-active', active);
+        node.setAttribute('aria-selected', String(active));
+    });
+    document.querySelectorAll('[data-stage-card]').forEach((card) => card.classList.remove('is-active'));
+    if (selectedStageNode) {
+        const card = document.getElementById(selectedStageNode.dataset.stageTarget);
+        card?.classList.add('is-active');
+        window.requestAnimationFrame(() => card?.scrollIntoView({behavior: 'smooth', block: 'nearest'}));
+    } else {
+        document.querySelector(`#${targetId} input, #${targetId} textarea`)?.focus({preventScroll: true});
+    }
 };
 
 reactionTreeNodes.forEach((node) => node.addEventListener('click', () => showReactionPanel(node.dataset.reactionTarget)));
+stageTreeNodes.forEach((node) => node.addEventListener('click', () => showReactionPanel(node.dataset.reactionTarget, node)));
 
 const copyText = async (value) => {
     if (navigator.clipboard && window.isSecureContext) {
@@ -160,13 +174,14 @@ const documentTabs = [...document.querySelectorAll('[data-document-url]')];
 let activeDocumentTab = documentTabs.find((tab) => tab.classList.contains('is-active')) || documentTabs[0];
 let activePdfPage = 1;
 
-const renderPdfPage = (page = 1, quote = '', bbox = '', fieldValue = '') => {
+const renderPdfPage = (page = 1, quote = '', bbox = '', fieldValue = '', fieldName = '') => {
     if (!activeDocumentTab || !pdfViewer) return;
     const pageCount = Number.parseInt(activeDocumentTab.dataset.pageCount, 10) || 1;
     activePdfPage = Math.min(Math.max(Number.parseInt(page, 10) || 1, 1), pageCount);
     const params = new URLSearchParams();
     if (quote && quote.toLowerCase() !== 'not reported.') params.set('q', quote);
     if (fieldValue && fieldValue.toLowerCase() !== 'not reported.') params.set('v', fieldValue);
+    if (fieldName) params.set('f', fieldName);
     if (bbox && bbox !== '0,0,0,0') params.set('bbox', bbox);
     const suffix = params.toString() ? `?${params}` : '';
     pdfCanvas?.classList.add('is-loading');
@@ -184,7 +199,7 @@ const renderPdfPage = (page = 1, quote = '', bbox = '', fieldValue = '') => {
 
 pdfViewer?.addEventListener('load', () => pdfCanvas?.classList.remove('is-loading'));
 
-const openDocument = (tab, page = 1, quote = '', bbox = '', fieldValue = '') => {
+const openDocument = (tab, page = 1, quote = '', bbox = '', fieldValue = '', fieldName = '') => {
     if (!tab || !pdfViewer) return;
     activeDocumentTab = tab;
     documentTabs.forEach((item) => {
@@ -192,7 +207,7 @@ const openDocument = (tab, page = 1, quote = '', bbox = '', fieldValue = '') => 
         item.classList.toggle('is-active', active);
         item.setAttribute('aria-selected', String(active));
     });
-    renderPdfPage(page, quote, bbox, fieldValue);
+    renderPdfPage(page, quote, bbox, fieldValue, fieldName);
 };
 
 documentTabs.forEach((tab) => tab.addEventListener('click', () => openDocument(tab)));
@@ -200,12 +215,17 @@ pdfPreviousPage?.addEventListener('click', () => renderPdfPage(activePdfPage - 1
 pdfNextPage?.addEventListener('click', () => renderPdfPage(activePdfPage + 1));
 pdfPageNumber?.addEventListener('change', () => renderPdfPage(pdfPageNumber.value));
 
-const activateFieldEvidence = (container, selectedValue = '') => {
+const activateFieldEvidence = (container, selectedValue = '', sourceValue = '') => {
     const sourceFile = (container.dataset.sourceFile || '').trim();
     const page = Number.parseInt(container.dataset.page, 10);
     const quote = (container.dataset.quote || '').trim();
     const bbox = (container.dataset.bbox || '').trim();
-    const fieldValue = selectedValue.trim() || (container.querySelector('input, textarea')?.value || '').trim();
+    const fieldName = (container.dataset.fieldName || '').trim();
+    const displayedValue = selectedValue.trim() || (container.querySelector('input, textarea')?.value || '').trim();
+    const implicitAlias = [...container.querySelectorAll('[data-highlight-alias]')].find(
+        (alias) => (alias.dataset.displayValue || '').trim().toLowerCase() === displayedValue.toLowerCase(),
+    );
+    const fieldValue = sourceValue.trim() || (implicitAlias?.dataset.sourceValue || '').trim() || displayedValue;
     document.querySelectorAll('[data-field-evidence]').forEach((field) => field.classList.toggle('is-source-active', field === container));
     document.querySelectorAll('[data-highlight-value]').forEach((button) => {
         button.classList.toggle('is-active', button.closest('[data-field-evidence]') === container && button.dataset.highlightValue === selectedValue);
@@ -221,10 +241,10 @@ const activateFieldEvidence = (container, selectedValue = '') => {
     const fieldLabel = container.querySelector('label')?.textContent || 'field';
     if (pdfHighlightStatus) {
         pdfHighlightStatus.textContent = selectedValue
-            ? `Highlighted “${selectedValue}” for ${fieldLabel} on page ${page}.`
-            : `Highlighted source words for ${fieldLabel} on page ${page}.`;
+            ? `Opened the cited page for “${selectedValue}”; exact source words are highlighted when available.`
+            : `Opened the cited page for ${fieldLabel}; exact source words are highlighted when available.`;
     }
-    openDocument(matchingTab, page, quote, bbox, fieldValue);
+    openDocument(matchingTab, page, quote, bbox, fieldValue, fieldName);
 };
 
 document.querySelectorAll('[data-field-evidence]').forEach((container) => {
@@ -240,17 +260,27 @@ const syncIndividualHighlightValues = (container) => {
     const input = container.querySelector('textarea, input');
     const target = container.querySelector('[data-value-highlights]');
     if (!input || !target) return;
+    const sourceAliases = new Map(
+        [...container.querySelectorAll('[data-highlight-alias]')].map((alias) => [
+            (alias.dataset.displayValue || '').trim().toLowerCase(),
+            (alias.dataset.sourceValue || '').trim(),
+        ]),
+    );
     const values = [...new Set(input.value.split(/\r?\n/).map((value) => value.trim()).filter(Boolean))];
     target.replaceChildren(...values.map((value) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'value-highlight-chip';
         button.dataset.highlightValue = value;
+        const sourceValue = sourceAliases.get(value.toLowerCase()) || value;
+        button.dataset.sourceHighlightValue = sourceValue;
         button.textContent = value;
-        button.title = `Highlight only “${value}” in the source PDF`;
+        button.title = sourceValue === value
+            ? `Highlight only “${value}” in the source PDF`
+            : `Highlight source value “${sourceValue}” for “${value}”`;
         button.addEventListener('click', (event) => {
             event.stopPropagation();
-            activateFieldEvidence(container, value);
+            activateFieldEvidence(container, value, sourceValue);
         });
         return button;
     }));

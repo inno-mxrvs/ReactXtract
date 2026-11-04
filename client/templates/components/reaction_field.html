@@ -2,6 +2,7 @@
 <div class="copy-field{% if span_two %} span-2{% endif %}"
      {% if not reviewer %}data-field-evidence{% endif %}
      {% if individual_values %}data-individual-highlights{% endif %}
+     data-field-name="{{ field_name }}"
      data-source-file="{{ metadata.source_file|default:'' }}"
      data-page="{{ metadata.page|default:'' }}"
      data-quote="{{ metadata.quote|default:'' }}"
@@ -14,7 +15,10 @@
     {% else %}
     <input id="reaction-{{ reaction_id }}-{{ field_name }}" name="reaction_{{ reaction_id }}_{{ input_name }}" type="text" value="{{ value }}">
     {% endif %}
-    {% if individual_values %}<div class="field-value-highlights" data-value-highlights aria-label="Individual {{ label }} values"></div>{% endif %}
+    {% if individual_values %}
+    <div class="field-value-highlights" data-value-highlights aria-label="Individual {{ label }} values"></div>
+    {% for alias in metadata.value_aliases %}<span hidden data-highlight-alias data-display-value="{{ alias.display }}" data-source-value="{{ alias.source }}"></span>{% endfor %}
+    {% endif %}
     {% if lookup_kind %}
     <div class="lookup-note">
         <span>Optional local lookup</span>

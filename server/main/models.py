@@ -65,6 +65,7 @@ class Reaction(models.Model):
     reaction_stages = models.CharField(max_length=100, default='')
     reaction_description_type = models.CharField(max_length=100, default='')
     reaction_yield = models.CharField(max_length=255, default='')
+    stage_details = models.JSONField(default=list)
     source_evidence = models.JSONField(default=list)
     confidence_scores = models.JSONField(default=dict)
     field_evidence = models.JSONField(default=dict)
@@ -85,13 +86,23 @@ class AITokenUsage(models.Model):
         EXTRACTION = 'extraction', 'Extraction'
         CONSOLIDATION = 'consolidation', 'Consolidation'
 
+    class Status(models.TextChoices):
+        COMPLETED = 'completed', 'Completed'
+        TIMEOUT = 'timeout', 'Timed out'
+        FAILED = 'failed', 'Failed'
+
     job = models.ForeignKey(ExtractionJob, on_delete=models.CASCADE, related_name='token_usages')
     document = models.ForeignKey(SourceDocument, on_delete=models.SET_NULL, null=True, blank=True, related_name='token_usages')
     phase = models.CharField(max_length=20, choices=Phase.choices)
     chunk_number = models.PositiveIntegerField(default=1)
     model_name = models.CharField(max_length=120)
+    attempt_number = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.COMPLETED)
+    error_type = models.CharField(max_length=120, blank=True)
+    error_message = models.TextField(blank=True)
     prompt_tokens = models.PositiveIntegerField(default=0)
     completion_tokens = models.PositiveIntegerField(default=0)
+    reasoning_tokens = models.PositiveIntegerField(default=0)
     total_tokens = models.PositiveIntegerField(default=0)
     estimated_cost_usd = models.DecimalField(max_digits=14, decimal_places=6, default=0)
     duration_ms = models.PositiveBigIntegerField(default=0)

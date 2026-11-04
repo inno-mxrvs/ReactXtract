@@ -59,6 +59,9 @@ If the evidence is insufficient to prove that a preparative transformation occur
 - Compounds with yield/excess >5% are acceptable as product.
 - Compounds with yield/excess equal or less than 5%, if separated, with fact, or are used as starting materials are acceptable as product.
 - Prefer the exact reported chemical name. If no name is reported, use the exact source label, such as "compound 4a" or "intermediate L-6".
+- Never return a bare number such as "14" as a product. When a preparative transformation explicitly forms a numbered source compound, include its role, such as "compound 14" or "intermediate 14".
+- Do not treat atom numbering, locants, or characterization assignments such as H14, C14, H-14, or C-14 as compounds, products, intermediates, or reactions.
+- When a source explicitly reports a separable or inseparable mixture of two or more identified products, return every identified product separately and create one reaction record per product. Do not use the complete "mixture of A and B" phrase as a product name. Preserve the mixture status and reported product ratio under Other reaction conditions or Yield, as applicable.
 - Do not invent a chemical name by interpreting a drawn structure.
 - Do not classify a compound as a product merely because it was characterized, tested, discussed, or used in a later step.
 
@@ -127,6 +130,7 @@ If the evidence is insufficient to prove that a preparative transformation occur
 
 - Reaction temperature (range) is captured at which the reaction stage was carried out.
 - Report temperature in ranges when the lowest and highest reaction values are provided. 
+- Format temperature ranges with "-" instead of the word "to", for example "0 °C - room temperature".
 - Preserve the exact value and units.
 - Ambient temperature and room temperature must be converted to 20°C.
 - Addition of reaction participants or components just before heating or reflux are not captured.
@@ -261,7 +265,7 @@ Follow these instructions:
 - Evidence from the reaction text supporting the stage count
 - Confidence level: High / Medium / Low
 
-The application uses a strict structured schema. Return the supported number or "Undetermined" in `reaction_stages`; use the existing starting-material and product fields, and use `field_metadata.reaction_stages` for evidence and numeric confidence. Do not add output keys that are absent from the application schema.
+The application uses a strict structured schema. Return the supported number or "Undetermined" in `reaction_stages`; use `field_metadata.reaction_stages` for overall stage-count evidence and numeric confidence. When two or more stages are explicitly supported, return one ordered `stage_details` entry per stage with `stage_number`, a concise `description`, stage-specific `starting_materials`, stage-specific `products` or intermediate, `confidence`, `source_file`, `page`, and exact supporting `quote`. Return an empty `stage_details` array when the source cannot support a stage-by-stage breakdown. Do not invent an intermediate or add output keys that are absent from the application schema.
 
 | Situation | How the model should count |
 | --- | --- |
