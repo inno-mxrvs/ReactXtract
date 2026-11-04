@@ -12,7 +12,11 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 
-from .lookups import normalize_reagent_catalyst_values, normalize_solvent_values
+from .lookups import (
+    normalize_reaction_conditions,
+    normalize_reagent_catalyst_values,
+    normalize_solvent_values,
+)
 from .models import AITokenUsage
 
 
@@ -100,7 +104,11 @@ Application requirements for hybrid PDF extraction:
 - Confidence must measure support in the supplied source, not general chemical plausibility. Use 0 when the field is empty.
 - The quote must be short enough to locate in the PDF text. If unavailable, use empty strings for source_file, page, and quote.
 - bbox is the visual source region with left, top, right, and bottom coordinates normalized from 0 to 1 against the original page. Enclose the supporting quote or table cell. Use zeros when unavailable.
+- When a product or another value is supported only by a scheme drawing, structure, or image label, set bbox to the tight visual region containing that exact structure and label. Do not cite an unrelated nearby sentence merely because it mentions a ratio, condition, or compound number.
 - Local solvent, reagent/catalyst, and reaction-condition lookup vocabularies are non-exhaustive. Extract every source-supported value even when it may not appear in a controlled list; never omit, reject, or lower confidence solely because a value is uncommon or absent from a lookup.
+- Populate yield only when the cited evidence explicitly contains the word "yield" (including forms such as yielded, yields, or yield%). A bare percentage may be a concentration, solvent composition, selectivity, conversion, or another measurement and is not sufficient yield evidence.
+- When more than one numeric reaction temperature is reported in the same unit, return one range ordered from the lowest to the highest value. Do not infer a numeric value for room temperature or another qualitative temperature.
+- For reaction_stages, return only the explicitly supported stage count, or "Undetermined" when the source cannot establish it. Do not add work-up, purification, extraction, crystallization, solvent exchange, or repeated reagent-addition operations as stages.
 """
 
 DUPLICATE_DECISION_SCHEMA = {
@@ -240,7 +248,77 @@ def _normalize_reaction_lookups(reaction):
     normalized['solvents'], _ = normalize_solvent_values(reaction.get('solvents') or [])
     normalized['reagents'], _ = normalize_reagent_catalyst_values(reaction.get('reagents') or [])
     normalized['catalysts'], _ = normalize_reagent_catalyst_values(reaction.get('catalysts') or [])
+    normalized['other_conditions'] = normalize_reaction_conditions(
+        reaction.get('other_conditions') or ''
+    )
     return normalized
+
+
+DEGREE_SIGN = chr(176)
+EN_DASH = chr(8211)
+TEMPERATURE_VALUE_PATTERN = re.compile(
+    rf'(?<![\w.])([+-]?\d+(?:\.\d+)?)\s*{DEGREE_SIGN}?\s*(C|K|F)\b',
+    re.I,
+)
+YIELD_EVIDENCE_PATTERN = re.compile(r'\byield(?:ed|ing|s)?\b', re.I)
+
+
+def _format_number(value):
+    return str(int(value)) if float(value).is_integer() else f'{value:g}'
+
+
+def normalize_temperature_range(value):
+    """Collapse multiple explicit temperatures in one unit to lowest-to-highest."""
+    text = str(value or '').strip()
+    matches = TEMPERATURE_VALUE_PATTERN.findall(text)
+    if len(matches) < 2:
+        return text
+    units = {unit.upper() for _, unit in matches}
+    if len(units) != 1:
+        return text
+    numbers = [float(number) for number, _ in matches]
+    lowest, highest = min(numbers), max(numbers)
+    unit = units.pop()
+    if lowest == highest:
+        return f'{_format_number(lowest)} {DEGREE_SIGN}{unit}'
+    return f'{_format_number(lowest)}{EN_DASH}{_format_number(highest)} {DEGREE_SIGN}{unit}'
+
+
+def _blank_field_metadata():
+    return {
+        'confidence': 0,
+        'source_file': '',
+        'page': '',
+        'quote': '',
+        'bbox': {'left': 0, 'top': 0, 'right': 0, 'bottom': 0},
+    }
+
+
+def _validate_and_normalize_reaction_fields(reaction):
+    """Apply deterministic safeguards after AI extraction and before consolidation."""
+    normalized = dict(reaction)
+    metadata = dict(reaction.get('field_metadata') or {})
+    normalized['field_metadata'] = metadata
+    normalized['reaction_temperature'] = normalize_temperature_range(
+        reaction.get('reaction_temperature') or ''
+    )
+    reaction_stages = str(reaction.get('reaction_stages') or '').strip()
+    if reaction_stages.casefold().strip(' .') in MISSING_VALUES:
+        normalized['reaction_stages'] = 'Undetermined'
+
+    reaction_yield = str(reaction.get('yield') or '').strip()
+    yield_metadata = metadata.get('yield') or {}
+    yield_quote = str(yield_metadata.get('quote') or '')
+    if reaction_yield and not YIELD_EVIDENCE_PATTERN.search(yield_quote):
+        normalized['yield'] = ''
+        metadata['yield'] = _blank_field_metadata()
+    return normalized
+
+
+def _prepare_extracted_reaction(reaction):
+    formatted = _format_reaction_chemical_typography(reaction)
+    normalized = _normalize_reaction_lookups(formatted)
+    return _validate_and_normalize_reaction_fields(normalized)
 
 
 def select_keyword_pages_from_text(page_texts, keywords=None, context_pages=None):
@@ -834,7 +912,7 @@ def extract_document_reactions(job, document, client, model):
     for chunk_number in sorted(results):
         result = results[chunk_number]
         candidates.extend(
-            _normalize_reaction_lookups(_format_reaction_chemical_typography(reaction))
+            _prepare_extracted_reaction(reaction)
             for reaction in result.get('reactions', [])
         )
     return candidates

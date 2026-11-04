@@ -2,7 +2,7 @@ import csv
 import json
 import re
 import time
-from datetime import timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
 import fitz
@@ -16,12 +16,14 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .lookups import (
+    normalize_reaction_conditions,
     normalize_reagent_catalyst_values,
     normalize_solvent_values,
     reaction_lookup_metadata,
 )
+from .excel_exports import build_accuracy_workbook
 from .models import ExtractionJob, Reaction, SourceDocument
-from .services import ExtractionDiscarded, run_extraction
+from .services import ExtractionDiscarded, normalize_temperature_range, run_extraction
 
 
 ALLOWED_EXTENSIONS = {'.pdf'}
@@ -120,8 +122,8 @@ def _prepare_draft_reactions(reaction_data):
             'solvents': solvents,
             'reaction_time': item.get('reaction_time') or '',
             'reaction_pressure': item.get('reaction_pressure') or '',
-            'reaction_temperature': item.get('reaction_temperature') or '',
-            'other_conditions': item.get('other_conditions') or '',
+            'reaction_temperature': normalize_temperature_range(item.get('reaction_temperature') or ''),
+            'other_conditions': normalize_reaction_conditions(item.get('other_conditions') or ''),
             'reaction_stages': str(item.get('reaction_stages') or ''),
             'reaction_description_type': item.get('reaction_description_type') or '',
             'reaction_yield': item.get('yield') or '',
@@ -240,10 +242,10 @@ def extract_documents(request):
     return render(request, 'job_detail.html', _job_context(job, reactions=draft_reactions, draft_token=draft_token))
 
 
-def records(request):
-    _discard_abandoned_jobs()
-    query = request.GET.get('q', '').strip()
-    status = request.GET.get('status', '').strip()
+def _filtered_record_jobs(parameters):
+    query = parameters.get('q', '').strip()
+    status = parameters.get('status', '').strip()
+    processed_date = parameters.get('processed_date', '').strip()
     jobs = ExtractionJob.objects.exclude(
         status__in=[ExtractionJob.Status.DRAFT, ExtractionJob.Status.PROCESSING],
     ).prefetch_related('documents')
@@ -251,7 +253,26 @@ def records(request):
         jobs = jobs.filter(Q(title__icontains=query) | Q(documents__original_name__icontains=query)).distinct()
     if status in ExtractionJob.Status.values:
         jobs = jobs.filter(status=status)
-    return render(request, 'records.html', {'jobs': jobs, 'query': query, 'status': status})
+    try:
+        parsed_date = date.fromisoformat(processed_date) if processed_date else None
+    except ValueError:
+        parsed_date = None
+        processed_date = ''
+    if parsed_date:
+        jobs = jobs.filter(completed_at__date=parsed_date)
+    return jobs, query, status, processed_date
+
+
+def records(request):
+    _discard_abandoned_jobs()
+    jobs, query, status, processed_date = _filtered_record_jobs(request.GET)
+    return render(request, 'records.html', {
+        'jobs': jobs,
+        'query': query,
+        'status': status,
+        'processed_date': processed_date,
+        'active_filter_query': request.GET.urlencode(),
+    })
 
 
 def job_detail(request, job_id):
@@ -328,8 +349,12 @@ def save_reactions(request, job_id):
                     solvents=_split_normalized_solvents(request.POST.get(prefix + 'solvents', '')),
                     reaction_time=request.POST.get(prefix + 'reaction_time', '').strip(),
                     reaction_pressure=request.POST.get(prefix + 'reaction_pressure', '').strip(),
-                    reaction_temperature=request.POST.get(prefix + 'reaction_temperature', '').strip(),
-                    other_conditions=request.POST.get(prefix + 'other_conditions', '').strip(),
+                    reaction_temperature=normalize_temperature_range(
+                        request.POST.get(prefix + 'reaction_temperature', '').strip()
+                    ),
+                    other_conditions=normalize_reaction_conditions(
+                        request.POST.get(prefix + 'other_conditions', '').strip()
+                    ),
                     reaction_stages=request.POST.get(prefix + 'reaction_stages', '').strip(),
                     reaction_description_type=request.POST.get(prefix + 'reaction_description_type', '').strip(),
                     reaction_yield=request.POST.get(prefix + 'reaction_yield', '').strip(),
@@ -361,8 +386,12 @@ def save_reactions(request, job_id):
             reaction.solvents = _split_normalized_solvents(request.POST.get(prefix + 'solvents', ''))
             reaction.reaction_time = request.POST.get(prefix + 'reaction_time', '').strip()
             reaction.reaction_pressure = request.POST.get(prefix + 'reaction_pressure', '').strip()
-            reaction.reaction_temperature = request.POST.get(prefix + 'reaction_temperature', '').strip()
-            reaction.other_conditions = request.POST.get(prefix + 'other_conditions', '').strip()
+            reaction.reaction_temperature = normalize_temperature_range(
+                request.POST.get(prefix + 'reaction_temperature', '').strip()
+            )
+            reaction.other_conditions = normalize_reaction_conditions(
+                request.POST.get(prefix + 'other_conditions', '').strip()
+            )
             reaction.reaction_stages = request.POST.get(prefix + 'reaction_stages', '').strip()
             reaction.reaction_description_type = request.POST.get(prefix + 'reaction_description_type', '').strip()
             reaction.reaction_yield = request.POST.get(prefix + 'reaction_yield', '').strip()
@@ -440,6 +469,32 @@ def export_job_csv(request, job_id):
 
 def export_all_csv(request):
     return _csv_response(Reaction.objects.select_related('job').all(), 'reactxtract-all-reactions.csv')
+
+
+def _xlsx_response(workbook, filename):
+    response = HttpResponse(
+        workbook.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response
+
+
+def export_job_xlsx(request, job_id):
+    job = get_object_or_404(
+        ExtractionJob.objects.prefetch_related('documents', 'reactions', 'token_usages'),
+        id=job_id,
+        status=ExtractionJob.Status.COMPLETED,
+    )
+    workbook = build_accuracy_workbook([job])
+    return _xlsx_response(workbook, f'reactxtract-{job.id}-accuracy-review.xlsx')
+
+
+def export_all_xlsx(request):
+    jobs, _, _, _ = _filtered_record_jobs(request.GET)
+    jobs = jobs.prefetch_related('reactions', 'token_usages')
+    workbook = build_accuracy_workbook(jobs)
+    return _xlsx_response(workbook, 'reactxtract-all-accuracy-reviews.xlsx')
 
 
 def export_usage_csv(request, job_id):
@@ -542,6 +597,10 @@ PDF_HIGHLIGHT_STOP_WORDS = {
     'the', 'and', 'for', 'with', 'from', 'was', 'were', 'after', 'before',
     'into', 'then', 'this', 'that', 'not', 'reported', 'reaction', 'mixture',
 }
+COMPOUND_LABEL_VALUE_PATTERN = re.compile(
+    r'(?i)^(?:(?:compound|intermediate|precursor|product|fragment)\s+)?'
+    r'\(?([A-Za-z]+-?\d+[A-Za-z]?|\d+[A-Za-z]?)\)?$'
+)
 
 
 def _pdf_search_text(value):
@@ -599,11 +658,24 @@ def _field_value_quads(page, field_value):
     if quads:
         return _unique_quads(quads)
 
+    # Do not match a bare numeric label against every occurrence of that number.
+    # Look for a source-role phrase such as "precursor 11" instead.
+    for phrase in phrases:
+        label_match = COMPOUND_LABEL_VALUE_PATTERN.fullmatch(phrase)
+        if not label_match:
+            continue
+        label = label_match.group(1)
+        for role in ('compound', 'intermediate', 'precursor', 'product', 'fragment'):
+            contextual_quads = page.search_for(f'{role} {label}', quads=True)
+            if contextual_quads:
+                return _unique_quads(contextual_quads)
+
     # AI wording can include surrounding labels or punctuation. Fall back to
     # distinctive extracted tokens, including flattened molecular formulae.
     tokens = {
         token for token in re.findall(r'[A-Za-z0-9][A-Za-z0-9+./−–-]{1,}', value)
         if token.casefold() not in PDF_HIGHLIGHT_STOP_WORDS
+        and not token.isdigit()
         and (len(token) >= 4 or any(character.isdigit() for character in token))
     }
     for token in sorted(tokens, key=len, reverse=True):
@@ -613,9 +685,31 @@ def _field_value_quads(page, field_value):
     return _unique_quads(quads)
 
 
-def _find_quote_rectangles(page, quote, field_value=''):
+def _bbox_rectangle(page, bbox_values):
+    if not bbox_values or len(bbox_values) != 4:
+        return None
+    try:
+        left, top, right, bottom = [max(0, min(1, float(value))) for value in bbox_values]
+    except (TypeError, ValueError):
+        return None
+    if right <= left or bottom <= top:
+        return None
+    return fitz.Rect(
+        left * page.rect.width,
+        top * page.rect.height,
+        right * page.rect.width,
+        bottom * page.rect.height,
+    )
+
+
+def _find_quote_rectangles(page, quote, field_value='', bbox_values=None):
     quote_quads = _quote_anchor_quads(page, quote)
     value_quads = _field_value_quads(page, field_value)
+    bbox_rectangle = _bbox_rectangle(page, bbox_values)
+    # When the extracted value exists only inside a scheme drawing, highlighting
+    # an unrelated narrative quote is misleading. Prefer its visual evidence box.
+    if field_value and not value_quads and bbox_rectangle:
+        return [bbox_rectangle]
     if value_quads and quote_quads:
         anchor = fitz.Rect(quote_quads[0].rect)
         for quad in quote_quads[1:]:
@@ -627,7 +721,7 @@ def _find_quote_rectangles(page, quote, field_value=''):
         nearby = [quad for quad in value_quads if anchor.intersects(quad.rect)]
         if nearby:
             return _unique_quads(nearby)
-    return value_quads or quote_quads
+    return value_quads or quote_quads or ([bbox_rectangle] if bbox_rectangle else [])
 
 
 def pdf_page_image(request, document_id, page_number):
@@ -639,18 +733,8 @@ def pdf_page_image(request, document_id, page_number):
         page = pdf[page_number - 1]
         quote = request.GET.get('q', '')[:1000]
         field_value = request.GET.get('v', '')[:2000]
-        rectangles = _find_quote_rectangles(page, quote, field_value)
         bbox_values = request.GET.get('bbox', '').split(',')
-        if not rectangles and len(bbox_values) == 4:
-            try:
-                left, top, right, bottom = [max(0, min(1, float(value))) for value in bbox_values]
-                if right > left and bottom > top:
-                    rectangles = [fitz.Rect(
-                        left * page.rect.width, top * page.rect.height,
-                        right * page.rect.width, bottom * page.rect.height,
-                    )]
-            except ValueError:
-                pass
+        rectangles = _find_quote_rectangles(page, quote, field_value, bbox_values)
         for rectangle in rectangles:
             annotation = page.add_highlight_annot(rectangle)
             annotation.set_colors(stroke=(1, 0.42, 0))

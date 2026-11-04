@@ -147,25 +147,32 @@ def normalize_solvent_values(values):
 
 
 def normalize_reagent_catalyst_values(values):
-    """Use MNAME when available; retain unmatched or non-canonical values."""
+    """Use a matched lookup name, preferring ReagCat MNAME over solvent aliases."""
     _, term_index = _reagent_catalyst_lookup()
+    _, solvent_term_index = _lookup(SOLVENT_LOOKUP_FILE)
     normalized_values = []
     matches = []
     for value in values or []:
         original = str(value or '').strip()
         if not original:
             continue
-        entry = term_index.get(_normalize_lookup_term(original))
-        canonical = entry['name'] if entry and entry['has_canonical_name'] else original
+        lookup_term = _normalize_lookup_term(original)
+        entry = term_index.get(lookup_term)
+        fallback_entry = solvent_term_index.get(lookup_term) if not entry else None
+        has_canonical_name = bool(
+            (entry and entry['has_canonical_name']) or fallback_entry
+        )
+        matched_entry = entry or fallback_entry
+        canonical = matched_entry['name'] if has_canonical_name else original
         normalized_values.append(canonical)
         matches.append({
             'input': original,
             'value': canonical,
-            'matched': bool(entry),
-            'canonicalized': bool(entry and entry['has_canonical_name']),
-            'lookup_type': entry['type'] if entry else '',
-            'code': entry['code'] if entry else '',
-            'workname': entry['workname'] if entry else '',
+            'matched': bool(matched_entry),
+            'canonicalized': has_canonical_name,
+            'lookup_type': matched_entry['type'] if matched_entry else '',
+            'code': matched_entry['code'] if matched_entry else '',
+            'workname': matched_entry.get('workname', '') if matched_entry else '',
         })
     return normalized_values, matches
 
@@ -207,6 +214,27 @@ def match_reaction_conditions(value):
         'lookup_type': entry['type'],
         'code': entry['code'],
     } for entry, matched_term, _, _ in selected]
+
+
+def normalize_reaction_conditions(value):
+    """Replace matched condition names/synonyms with the approved lookup name."""
+    normalized = str(value or '').strip()
+    if not normalized:
+        return ''
+    matches = sorted(
+        match_reaction_conditions(normalized),
+        key=lambda item: len(item['matched_text']),
+        reverse=True,
+    )
+    for item in matches:
+        term = item['matched_text']
+        normalized = re.sub(
+            rf'(?<![\w]){re.escape(term)}(?![\w])',
+            item['value'],
+            normalized,
+            flags=re.I,
+        )
+    return normalized
 
 
 def reaction_lookup_metadata(solvents, other_conditions, reagents=None, catalysts=None):
