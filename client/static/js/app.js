@@ -103,7 +103,10 @@ const stageTreeNodes = [...document.querySelectorAll('[data-stage-target]')];
 const reactionPanels = [...document.querySelectorAll('[data-reaction-panel]')];
 
 const showReactionPanel = (targetId, selectedStageNode = null) => {
-    reactionPanels.forEach((panel) => panel.classList.toggle('is-hidden', panel.id !== targetId));
+    reactionPanels.forEach((panel) => {
+        panel.classList.toggle('is-hidden', panel.id !== targetId);
+        panel.classList.toggle('is-stage-selected', panel.id === targetId && Boolean(selectedStageNode));
+    });
     reactionTreeNodes.forEach((node) => {
         const active = node.dataset.reactionTarget === targetId;
         node.classList.toggle('is-active', active);

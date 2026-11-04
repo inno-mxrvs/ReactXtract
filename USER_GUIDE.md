@@ -535,7 +535,7 @@ Standalone numbers are not accepted as products. A genuine numbered source compo
 
 When a source explicitly reports a separable or inseparable mixture of named products, ReactXtract displays each product as a separate reaction candidate instead of using the complete mixture phrase as one product. Shared reaction fields remain attached to each candidate. Process an existing PDF again to apply this behavior to a previously generated extraction.
 
-For reactions with multiple explicitly supported stages, the reaction tree shows nested identifiers such as **RX-0001A** and **RX-0001B**. Select a stage to open its stage card containing the source-supported transformation description, starting materials, product or intermediate, confidence, and evidence. Existing records extracted before stage details were introduced show placeholder stage nodes; process the PDF again to obtain populated stage cards.
+For reactions with multiple explicitly supported stages, the reaction tree shows nested identifiers such as **RX-0001A** and **RX-0001B**. Select a branch to open its independent editable fields for products/intermediate, starting materials, reagents, catalysts, solvents, reaction time, pressure, temperature, other conditions, description type, and yield, together with stage confidence and evidence. Select the parent RX node to return to the combined reaction fields. Stage edits are saved when **Save work** or **Save edits** is selected. A stage count without extracted stage details does not create branches; it is treated as **Undetermined**. Process older records again to obtain populated stage branches.
 
 ## 14. POC Security and Usage Notes
 

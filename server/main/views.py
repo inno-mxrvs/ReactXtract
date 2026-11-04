@@ -40,6 +40,7 @@ REACTION_FIELDS = [
     'reaction_time', 'reaction_pressure', 'reaction_temperature',
     'other_conditions', 'reaction_stages', 'reaction_description_type', 'yield',
 ]
+STAGE_REACTION_FIELDS = [field for field in REACTION_FIELDS if field != 'reaction_stages']
 DRAFT_SIGNING_SALT = 'reactxtract.reaction-draft.v1'
 PDF_HIGHLIGHT_VALUE_ALIASES = {
     'py': ('pyridine',),
@@ -53,6 +54,17 @@ def _stage_suffix(number):
         number, remainder = divmod(number - 1, 26)
         suffix = chr(65 + remainder) + suffix
     return suffix
+
+
+def _supported_stage_count(value, stage_details):
+    details = stage_details or []
+    if len(details) > 1:
+        return str(len(details))
+    try:
+        stated_count = int(str(value or '').strip())
+    except (TypeError, ValueError):
+        return str(value or '')
+    return 'Undetermined' if stated_count > 1 else str(stated_count)
 
 
 def _stage_details_for_storage(raw_details):
@@ -70,6 +82,19 @@ def _stage_details_for_storage(raw_details):
             'description': str(raw.get('description') or ''),
             'starting_materials': [str(value) for value in raw.get('starting_materials') or []],
             'products': [str(value) for value in raw.get('products') or []],
+            'reagents': [str(value) for value in raw.get('reagents') or []],
+            'catalysts': [str(value) for value in raw.get('catalysts') or []],
+            'solvents': [str(value) for value in raw.get('solvents') or []],
+            'reaction_time': str(raw.get('reaction_time') or ''),
+            'reaction_pressure': str(raw.get('reaction_pressure') or ''),
+            'reaction_temperature': normalize_temperature_range(
+                raw.get('reaction_temperature') or ''
+            ),
+            'other_conditions': normalize_reaction_conditions(
+                raw.get('other_conditions') or ''
+            ),
+            'reaction_description_type': str(raw.get('reaction_description_type') or ''),
+            'yield': str(raw.get('yield') or ''),
             'confidence': confidence,
             'source_file': str(raw.get('source_file') or ''),
             'page': str(raw.get('page') or ''),
@@ -78,46 +103,57 @@ def _stage_details_for_storage(raw_details):
     return sorted(stored, key=lambda item: item['stage_number'])
 
 
-def _stage_details_for_display(raw_details, reaction_stages, reaction_display_id):
+def _stage_details_for_display(
+    raw_details,
+    reaction_stages,
+    reaction_display_id,
+    reaction_form_key=None,
+):
+    reaction_form_key = reaction_form_key or reaction_display_id
     details = []
     for raw in _stage_details_for_storage(raw_details):
         stage_number = raw['stage_number']
-        details.append({
+        evidence = {
+            'source_file': str(raw.get('source_file') or ''),
+            'page': str(raw.get('page') or ''),
+            'quote': str(raw.get('quote') or ''),
+            'bbox': {'left': 0, 'top': 0, 'right': 0, 'bottom': 0},
+        }
+        _, lookup_metadata = reaction_lookup_metadata(
+            raw.get('solvents') or [],
+            raw.get('other_conditions') or '',
+            raw.get('reagents') or [],
+            raw.get('catalysts') or [],
+        )
+        detail = {
             'stage_number': stage_number,
             'display_id': f'{reaction_display_id}{_stage_suffix(stage_number)}',
+            'form_key': f'{reaction_form_key}_stage_{stage_number}',
             'description': str(raw.get('description') or ''),
             'starting_materials': [str(value) for value in raw.get('starting_materials') or []],
             'products': [str(value) for value in raw.get('products') or []],
+            'reagents': [str(value) for value in raw.get('reagents') or []],
+            'catalysts': [str(value) for value in raw.get('catalysts') or []],
+            'solvents': [str(value) for value in raw.get('solvents') or []],
+            'reaction_time': str(raw.get('reaction_time') or ''),
+            'reaction_pressure': str(raw.get('reaction_pressure') or ''),
+            'reaction_temperature': str(raw.get('reaction_temperature') or ''),
+            'other_conditions': str(raw.get('other_conditions') or ''),
+            'reaction_description_type': str(raw.get('reaction_description_type') or ''),
+            'reaction_yield': str(raw.get('yield') or ''),
             'confidence': float(raw.get('confidence') or 0),
             'source_file': str(raw.get('source_file') or ''),
             'page': str(raw.get('page') or ''),
             'quote': str(raw.get('quote') or ''),
+            'field_evidence': {field: dict(evidence) for field in STAGE_REACTION_FIELDS},
+            'lookup_metadata': lookup_metadata,
             'is_placeholder': False,
-        })
-    details.sort(key=lambda item: item['stage_number'])
-    if details:
-        return details
-    try:
-        stage_count = int(str(reaction_stages or '').strip())
-    except (TypeError, ValueError):
-        stage_count = 0
-    if stage_count <= 1:
-        return []
-    return [
-        {
-            'stage_number': number,
-            'display_id': f'{reaction_display_id}{_stage_suffix(number)}',
-            'description': 'Stage-specific evidence was not stored for this extraction.',
-            'starting_materials': [],
-            'products': [],
-            'confidence': 0,
-            'source_file': '',
-            'page': '',
-            'quote': '',
-            'is_placeholder': True,
         }
-        for number in range(1, stage_count + 1)
-    ]
+        details.append(detail)
+    details.sort(key=lambda item: item['stage_number'])
+    # Never synthesize stage branches from a numeric count. A branch exists only
+    # when the extraction returned at least two source-supported stage records.
+    return details if len(details) > 1 else []
 
 
 def home(request):
@@ -215,13 +251,17 @@ def _prepare_draft_reactions(reaction_data):
             'reaction_pressure': item.get('reaction_pressure') or '',
             'reaction_temperature': normalize_temperature_range(item.get('reaction_temperature') or ''),
             'other_conditions': normalize_reaction_conditions(item.get('other_conditions') or ''),
-            'reaction_stages': str(item.get('reaction_stages') or ''),
+            'reaction_stages': _supported_stage_count(
+                item.get('reaction_stages') or '',
+                item.get('stage_details') or [],
+            ),
             'reaction_description_type': item.get('reaction_description_type') or '',
             'reaction_yield': item.get('yield') or '',
             'stage_details': _stage_details_for_display(
                 item.get('stage_details') or [],
                 item.get('reaction_stages') or '',
                 display_id,
+                f'draft_{index}',
             ),
             'source_evidence': source_evidence,
             'confidence_scores': confidence_scores,
@@ -241,6 +281,11 @@ def _saved_reactions_for_display(job):
             reaction.stage_details,
             reaction.reaction_stages,
             reaction.display_id,
+            reaction.form_key,
+        )
+        reaction.reaction_stages = _supported_stage_count(
+            reaction.reaction_stages,
+            reaction.stage_details,
         )
         _, reaction.lookup_metadata = reaction_lookup_metadata(
             reaction.solvents,
@@ -423,6 +468,39 @@ def _split_normalized_reagent_catalyst(value):
     return normalized
 
 
+def _stage_details_from_post(request, reaction_prefix, raw_details):
+    stages = _stage_details_for_storage(raw_details)
+    for stage in stages:
+        prefix = f'{reaction_prefix}stage_{stage["stage_number"]}_'
+        stage['description'] = request.POST.get(prefix + 'description', '').strip()
+        stage['products'] = _split_products(request.POST.get(prefix + 'products', ''))
+        stage['starting_materials'] = _split_lines(
+            request.POST.get(prefix + 'starting_materials', '')
+        )
+        stage['reagents'] = _split_normalized_reagent_catalyst(
+            request.POST.get(prefix + 'reagents', '')
+        )
+        stage['catalysts'] = _split_normalized_reagent_catalyst(
+            request.POST.get(prefix + 'catalysts', '')
+        )
+        stage['solvents'] = _split_normalized_solvents(
+            request.POST.get(prefix + 'solvents', '')
+        )
+        stage['reaction_time'] = request.POST.get(prefix + 'reaction_time', '').strip()
+        stage['reaction_pressure'] = request.POST.get(prefix + 'reaction_pressure', '').strip()
+        stage['reaction_temperature'] = normalize_temperature_range(
+            request.POST.get(prefix + 'reaction_temperature', '').strip()
+        )
+        stage['other_conditions'] = normalize_reaction_conditions(
+            request.POST.get(prefix + 'other_conditions', '').strip()
+        )
+        stage['reaction_description_type'] = request.POST.get(
+            prefix + 'reaction_description_type', ''
+        ).strip()
+        stage['yield'] = request.POST.get(prefix + 'reaction_yield', '').strip()
+    return stages
+
+
 @require_POST
 def save_reactions(request, job_id):
     job = get_object_or_404(ExtractionJob, id=job_id)
@@ -463,7 +541,11 @@ def save_reactions(request, job_id):
                     reaction_stages=request.POST.get(prefix + 'reaction_stages', '').strip(),
                     reaction_description_type=request.POST.get(prefix + 'reaction_description_type', '').strip(),
                     reaction_yield=request.POST.get(prefix + 'reaction_yield', '').strip(),
-                    stage_details=_stage_details_for_storage(item.get('stage_details') or []),
+                    stage_details=_stage_details_from_post(
+                        request,
+                        prefix,
+                        item.get('stage_details') or [],
+                    ),
                     reviewer_notes=request.POST.get(prefix + 'reviewer_notes', '').strip(),
                     source_evidence=item.get('source_evidence') or [],
                     confidence_scores=item.get('confidence_scores') or {},
@@ -501,6 +583,11 @@ def save_reactions(request, job_id):
             reaction.reaction_stages = request.POST.get(prefix + 'reaction_stages', '').strip()
             reaction.reaction_description_type = request.POST.get(prefix + 'reaction_description_type', '').strip()
             reaction.reaction_yield = request.POST.get(prefix + 'reaction_yield', '').strip()
+            reaction.stage_details = _stage_details_from_post(
+                request,
+                prefix,
+                reaction.stage_details,
+            )
             reaction.reviewer_notes = request.POST.get(prefix + 'reviewer_notes', '').strip()
             reaction.save()
     messages.success(request, 'Saved changes to the reaction records.')

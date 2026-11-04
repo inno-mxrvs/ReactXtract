@@ -80,11 +80,24 @@
                             {% for stage in reaction.stage_details %}
                             <article class="stage-detail{% if stage.is_placeholder %} stage-detail--placeholder{% endif %}" id="stage-{{ reaction.form_key }}-{{ stage.stage_number }}" data-stage-card>
                                 <header><div><span>{{ stage.stage_number }}</span><strong>RX-{{ stage.display_id }}</strong></div><b class="confidence-badge--{{ stage.confidence|confidence_class }}">{{ stage.confidence|confidence_percent }}%</b></header>
+                                {% if stage.is_placeholder %}
                                 <p>{{ stage.description }}</p>
-                                <dl>
-                                    <div><dt>Starting materials</dt><dd>{% if stage.starting_materials %}{{ stage.starting_materials|join:", " }}{% else %}&mdash;{% endif %}</dd></div>
-                                    <div><dt>Product / intermediate</dt><dd>{% if stage.products %}{{ stage.products|join:", " }}{% else %}&mdash;{% endif %}</dd></div>
-                                </dl>
+                                {% else %}
+                                <div class="stage-description-field"><label for="reaction-{{ stage.form_key }}-description">Stage transformation</label><textarea id="reaction-{{ stage.form_key }}-description" name="reaction_{{ stage.form_key }}_description">{{ stage.description }}</textarea></div>
+                                <div class="stage-form-grid">
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='products' input_name='products' label='Products / intermediate' value=stage.products|lines metadata=stage.field_evidence.products confidence=stage.confidence multiline=True individual_values=True %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='starting-materials' input_name='starting_materials' label='Starting materials' value=stage.starting_materials|lines metadata=stage.field_evidence.starting_materials confidence=stage.confidence multiline=True individual_values=True %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='reagents' input_name='reagents' label='Reagents' value=stage.reagents|lines metadata=stage.field_evidence.reagents confidence=stage.confidence multiline=True individual_values=True lookup_items=stage.lookup_metadata.reagents lookup_kind='reagent' %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='catalysts' input_name='catalysts' label='Catalysts' value=stage.catalysts|lines metadata=stage.field_evidence.catalysts confidence=stage.confidence multiline=True individual_values=True lookup_items=stage.lookup_metadata.catalysts lookup_kind='catalyst' %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='solvents' input_name='solvents' label='Solvents' value=stage.solvents|lines metadata=stage.field_evidence.solvents confidence=stage.confidence multiline=True individual_values=True lookup_items=stage.lookup_metadata.solvents lookup_kind='solvent' %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='time' input_name='reaction_time' label='Reaction time' value=stage.reaction_time metadata=stage.field_evidence.reaction_time confidence=stage.confidence %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='pressure' input_name='reaction_pressure' label='Reaction pressure' value=stage.reaction_pressure metadata=stage.field_evidence.reaction_pressure confidence=stage.confidence %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='temperature' input_name='reaction_temperature' label='Reaction temperature' value=stage.reaction_temperature metadata=stage.field_evidence.reaction_temperature confidence=stage.confidence %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='description-type' input_name='reaction_description_type' label='Type of reaction description' value=stage.reaction_description_type metadata=stage.field_evidence.reaction_description_type confidence=stage.confidence %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='yield' input_name='reaction_yield' label='Yield' value=stage.reaction_yield metadata=stage.field_evidence.yield confidence=stage.confidence %}
+                                    {% include 'components/reaction_field.html' with reaction_id=stage.form_key field_name='conditions' input_name='other_conditions' label='Other reaction conditions' value=stage.other_conditions metadata=stage.field_evidence.other_conditions confidence=stage.confidence multiline=True span_two=True lookup_items=stage.lookup_metadata.reaction_conditions lookup_kind='condition' %}
+                                </div>
+                                {% endif %}
                                 <footer>{% if stage.source_file %}<b>{{ stage.source_file }}</b>{% if stage.page %}<span>p. {{ stage.page }}</span>{% endif %}{% else %}<span>No stage-specific source location stored.</span>{% endif %}{% if stage.quote %}<q>{{ stage.quote }}</q>{% endif %}</footer>
                             </article>
                             {% endfor %}
