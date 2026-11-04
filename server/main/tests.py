@@ -44,7 +44,13 @@ from .services import (
     select_keyword_pages_from_text,
     split_product_values,
 )
-from .views import _find_quote_rectangles, _prepare_draft_reactions, _split_lines, _split_products
+from .views import (
+    _find_quote_rectangles,
+    _prepare_draft_reactions,
+    _split_lines,
+    _split_products,
+    _stage_details_from_post,
+)
 
 
 TEST_MEDIA_ROOT = Path(__file__).resolve().parents[2] / '.test-media'
@@ -182,6 +188,58 @@ class ReactXtractViewsTests(TestCase):
         self.assertContains(response, 'Intermediate I was converted to product P.')
         self.assertContains(response, 'data-stage-target', count=2)
         self.assertContains(response, 'data-stage-card', count=2)
+        self.assertContains(response, f'name="reaction_{reaction.id}_stage_1_reagents"')
+        self.assertContains(response, f'name="reaction_{reaction.id}_stage_2_solvents"')
+        self.assertContains(response, f'name="reaction_{reaction.id}_stage_2_reaction_time"')
+
+    def test_stage_specific_field_sets_are_saved_independently(self):
+        request = SimpleNamespace(POST={
+            'reaction_draft_1_stage_1_description': 'A to intermediate B',
+            'reaction_draft_1_stage_1_products': 'Intermediate B',
+            'reaction_draft_1_stage_1_starting_materials': 'Starting A',
+            'reaction_draft_1_stage_1_reagents': 'Et3N',
+            'reaction_draft_1_stage_1_catalysts': 'DMAP',
+            'reaction_draft_1_stage_1_solvents': 'DCM',
+            'reaction_draft_1_stage_1_reaction_time': '2 h',
+            'reaction_draft_1_stage_1_reaction_pressure': '1 atm',
+            'reaction_draft_1_stage_1_reaction_temperature': '0 °C to 20 °C',
+            'reaction_draft_1_stage_1_other_conditions': 'inert atmosphere',
+            'reaction_draft_1_stage_1_reaction_description_type': 'Experimental part',
+            'reaction_draft_1_stage_1_reaction_yield': 'Yield (%) 80',
+        })
+        original = [{
+            'stage_number': 1,
+            'confidence': 0.9,
+            'source_file': 'article.pdf',
+            'page': '2',
+            'quote': 'Starting A afforded Intermediate B.',
+        }]
+
+        stage = _stage_details_from_post(request, 'reaction_draft_1_', original)[0]
+
+        self.assertEqual(stage['products'], ['Intermediate B'])
+        self.assertEqual(stage['starting_materials'], ['Starting A'])
+        self.assertEqual(stage['reagents'], ['triethylamine'])
+        self.assertEqual(stage['catalysts'], ['4-dimethylaminopyridine'])
+        self.assertEqual(stage['solvents'], ['dichloromethane'])
+        self.assertEqual(stage['reaction_time'], '2 h')
+        self.assertEqual(stage['reaction_pressure'], '1 atm')
+        self.assertEqual(stage['reaction_temperature'], '0–20 °C')
+        self.assertEqual(stage['other_conditions'], 'Inert atmosphere')
+        self.assertEqual(stage['reaction_description_type'], 'Experimental part')
+        self.assertEqual(stage['yield'], 'Yield (%) 80')
+        self.assertEqual(stage['source_file'], 'article.pdf')
+
+    def test_numeric_stage_count_without_details_creates_no_placeholder_branches(self):
+        prepared = _prepare_draft_reactions([{
+            'products': ['Product A'],
+            'reaction_stages': '4',
+            'stage_details': [],
+            'field_metadata': field_metadata(),
+        }])[0]
+
+        self.assertEqual(prepared['stage_details'], [])
+        self.assertEqual(prepared['reaction_stages'], 'Undetermined')
 
     @patch('main.views.run_extraction')
     def test_extraction_stays_unsaved_until_save_work(self, mocked_extraction):
@@ -203,12 +261,12 @@ class ReactXtractViewsTests(TestCase):
         self.assertContains(response, 'Save work')
         self.assertContains(response, 'data-unsaved-review')
         self.assertContains(response, 'data-draft-resolution', count=2)
-        self.assertContains(response, 'app.js?v=20261104.4')
+        self.assertContains(response, 'app.js?v=20261104.5')
         self.assertContains(response, 'RX-0001')
         self.assertContains(response, '91%')
         self.assertContains(response, 'alt="Rendered source PDF page"')
         self.assertContains(response, reverse('pdf_page_image', args=[job.documents.get().id, 1]))
-        self.assertContains(response, 'styles.css?v=20261104.1')
+        self.assertContains(response, 'styles.css?v=20261104.2')
         self.assertContains(response, 'data-individual-highlights', count=5)
         self.assertContains(response, 'data-value-highlights', count=5)
         self.assertContains(response, reverse('pdf_document', args=[job.documents.get().id]))
@@ -953,6 +1011,12 @@ class ChunkingTests(TestCase):
         self.assertIn('reaction_description_type', schema_fields)
         self.assertIn('yield', schema_fields)
         self.assertIn('stage_details', schema_fields)
+        stage_schema = schema_fields['stage_details']['items']
+        self.assertTrue({
+            'products', 'starting_materials', 'reagents', 'catalysts', 'solvents',
+            'reaction_time', 'reaction_pressure', 'reaction_temperature',
+            'other_conditions', 'reaction_description_type', 'yield',
+        }.issubset(set(stage_schema['required'])))
 
 
 class OptionalLookupNormalizationTests(TestCase):
@@ -1054,6 +1118,28 @@ class OptionalLookupNormalizationTests(TestCase):
 
 
 class ReactionFieldValidationTests(TestCase):
+    def test_unsupported_multistage_count_becomes_undetermined(self):
+        reaction = {
+            'products': ['Product A'],
+            'reaction_stages': '4',
+            'stage_details': [],
+            'reaction_temperature': '',
+            'field_metadata': {
+                'reaction_stages': {
+                    'confidence': 0.85,
+                    'source_file': 'article.pdf',
+                    'page': '2',
+                    'quote': 'four-stage sequence',
+                },
+            },
+        }
+
+        normalized = _validate_and_normalize_reaction_fields(reaction)
+
+        self.assertEqual(normalized['reaction_stages'], 'Undetermined')
+        self.assertEqual(normalized['stage_details'], [])
+        self.assertEqual(normalized['field_metadata']['reaction_stages']['confidence'], 0)
+
     def test_explicit_product_mixture_is_split_into_individual_values(self):
         products = split_product_values([
             'inseparable mixture of (±)-albicanyl acetate (12) and '

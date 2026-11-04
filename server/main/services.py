@@ -25,6 +25,9 @@ REACTION_FIELDS = [
     'reaction_time', 'reaction_pressure', 'reaction_temperature',
     'other_conditions', 'reaction_stages', 'reaction_description_type', 'yield',
 ]
+STAGE_REACTION_FIELDS = [
+    field for field in REACTION_FIELDS if field != 'reaction_stages'
+]
 
 
 def _field_metadata_schema():
@@ -59,6 +62,15 @@ STAGE_DETAIL_SCHEMA = {
         'description': {'type': 'string'},
         'starting_materials': {'type': 'array', 'items': {'type': 'string'}},
         'products': {'type': 'array', 'items': {'type': 'string'}},
+        'reagents': {'type': 'array', 'items': {'type': 'string'}},
+        'catalysts': {'type': 'array', 'items': {'type': 'string'}},
+        'solvents': {'type': 'array', 'items': {'type': 'string'}},
+        'reaction_time': {'type': 'string'},
+        'reaction_pressure': {'type': 'string'},
+        'reaction_temperature': {'type': 'string'},
+        'other_conditions': {'type': 'string'},
+        'reaction_description_type': {'type': 'string'},
+        'yield': {'type': 'string'},
         'confidence': {'type': 'number', 'minimum': 0, 'maximum': 1},
         'source_file': {'type': 'string'},
         'page': {'type': 'string'},
@@ -66,6 +78,9 @@ STAGE_DETAIL_SCHEMA = {
     },
     'required': [
         'stage_number', 'description', 'starting_materials', 'products',
+        'reagents', 'catalysts', 'solvents', 'reaction_time',
+        'reaction_pressure', 'reaction_temperature', 'other_conditions',
+        'reaction_description_type', 'yield',
         'confidence', 'source_file', 'page', 'quote',
     ],
 }
@@ -135,7 +150,8 @@ Application requirements for hybrid PDF extraction:
 - When more than one numeric reaction temperature is reported in the same unit, return one range ordered from the lowest to the highest value. Do not infer a numeric value for room temperature or another qualitative temperature.
 - Format a reaction-temperature range with "-" instead of the word "to", for example "0 °C - room temperature".
 - For reaction_stages, return only the explicitly supported stage count, or "Undetermined" when the source cannot establish it. Do not add work-up, purification, extraction, crystallization, solvent exchange, or repeated reagent-addition operations as stages.
-- For a reaction with two or more explicitly supported stages, return one ordered stage_details entry per stage. Each entry must identify that stage's starting materials, product or intermediate, concise transformation description, confidence, and exact source evidence. Return [] when a stage breakdown is not explicitly supported; never invent a missing intermediate merely to match the stage count.
+- For a reaction with two or more explicitly supported stages, return one ordered stage_details entry per stage. Every stage entry must independently contain its source-supported products or intermediate, starting materials, reagents, catalysts, solvents, reaction time, reaction pressure, reaction temperature, other reaction conditions, type of reaction description, yield, concise transformation description, confidence, and exact source evidence. Do not copy a parent reaction's combined values into every stage; assign each value only to the stage where the source supports its use. Return [] when a stage breakdown is not explicitly supported; never invent a missing intermediate merely to match the stage count.
+- Never return a numeric reaction_stages value greater than 1 with an empty stage_details array. When individual stages cannot be supported, return reaction_stages as "Undetermined" and stage_details as [].
 - Never return a bare number such as "14" as a product. A numeric source label must include an explicit role, such as "compound 14", and must be formed by a source-supported preparative transformation. Atom assignments and locants such as H14, C14, H-14, C-14, or NMR peak annotations are characterization data, not products or reactions.
 """
 
@@ -271,14 +287,12 @@ def _format_reaction_chemical_typography(reaction):
     formatted['stage_details'] = []
     for item in reaction.get('stage_details') or []:
         stage = dict(item)
-        stage['starting_materials'] = [
-            format_chemical_subscripts(value)
-            for value in item.get('starting_materials') or []
-        ]
-        stage['products'] = [
-            format_chemical_subscripts(value)
-            for value in item.get('products') or []
-        ]
+        for field in STAGE_REACTION_FIELDS:
+            value = item.get(field)
+            if isinstance(value, list):
+                stage[field] = [format_chemical_subscripts(entry) for entry in value]
+            elif isinstance(value, str):
+                stage[field] = format_chemical_subscripts(value)
         formatted['stage_details'].append(stage)
     return formatted
 
@@ -403,13 +417,40 @@ def _validate_and_normalize_reaction_fields(reaction):
     for item in reaction.get('stage_details') or []:
         stage = dict(item)
         stage['products'] = split_product_values(item.get('products') or [])
+        stage['starting_materials'] = [
+            str(value).strip() for value in item.get('starting_materials') or [] if str(value).strip()
+        ]
+        stage['reagents'], _ = normalize_reagent_catalyst_values(item.get('reagents') or [])
+        stage['catalysts'], _ = normalize_reagent_catalyst_values(item.get('catalysts') or [])
+        stage['solvents'], _ = normalize_solvent_values(item.get('solvents') or [])
+        stage['reaction_time'] = str(item.get('reaction_time') or '').strip()
+        stage['reaction_pressure'] = str(item.get('reaction_pressure') or '').strip()
+        stage['reaction_temperature'] = normalize_temperature_range(
+            item.get('reaction_temperature') or ''
+        )
+        stage['other_conditions'] = normalize_reaction_conditions(
+            item.get('other_conditions') or ''
+        )
+        stage['reaction_description_type'] = str(
+            item.get('reaction_description_type') or ''
+        ).strip()
+        stage['yield'] = str(item.get('yield') or '').strip()
         stage_details.append(stage)
     normalized['stage_details'] = stage_details
     normalized['reaction_temperature'] = normalize_temperature_range(
         reaction.get('reaction_temperature') or ''
     )
     reaction_stages = str(reaction.get('reaction_stages') or '').strip()
-    if reaction_stages.casefold().strip(' .') in MISSING_VALUES:
+    try:
+        stated_stage_count = int(reaction_stages)
+    except (TypeError, ValueError):
+        stated_stage_count = 0
+    if stage_details:
+        normalized['reaction_stages'] = str(len(stage_details))
+    elif stated_stage_count > 1:
+        normalized['reaction_stages'] = 'Undetermined'
+        metadata['reaction_stages'] = _blank_field_metadata()
+    elif reaction_stages.casefold().strip(' .') in MISSING_VALUES:
         normalized['reaction_stages'] = 'Undetermined'
 
     reaction_yield = str(reaction.get('yield') or '').strip()
