@@ -4,14 +4,15 @@
 {% block content %}
 <main class="page shell">
     <div class="page-header">
-        <div><div class="eyebrow">EXTRACTION LIBRARY</div><h1>Saved records</h1><p>Search past literature sets, inspect hybrid AI extraction and token usage, or export all reaction rows.</p></div>
-        <a class="button button--primary" href="{% url 'export_all_csv' %}">Export all CSV</a>
+        <div><div class="eyebrow">EXTRACTION LIBRARY</div><h1>Saved records</h1><p>Search past literature sets, inspect hybrid AI extraction and token usage, or export per-file accuracy-review worksheets.</p></div>
+        <a class="button button--primary" href="{% url 'export_all_xlsx' %}{% if active_filter_query %}?{{ active_filter_query }}{% endif %}">Export filtered Excel</a>
     </div>
     <form class="filter-bar" method="get">
         <label><span>Search</span><input class="text-input" name="q" type="search" value="{{ query }}" placeholder="Title or source filename"></label>
         <label><span>Status</span><select class="text-input" name="status"><option value="">All statuses</option><option value="completed" {% if status == 'completed' %}selected{% endif %}>Completed</option><option value="failed" {% if status == 'failed' %}selected{% endif %}>Failed</option></select></label>
+        <label><span>Date processed</span><input class="text-input" name="processed_date" type="date" value="{{ processed_date }}"></label>
         <button class="button button--secondary" type="submit">Filter</button>
-        {% if query or status %}<a class="button button--ghost" href="{% url 'records' %}">Clear</a>{% endif %}
+        {% if query or status or processed_date %}<a class="button button--ghost" href="{% url 'records' %}">Clear</a>{% endif %}
     </form>
     <div class="records-table-wrap">
         <table class="records-table">

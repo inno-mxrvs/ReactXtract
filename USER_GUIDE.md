@@ -348,29 +348,37 @@ Important behavior:
 
 Open **Records** to view saved extraction jobs.
 
+Use **Search**, **Status**, and **Date processed** to limit the records list. **Export filtered Excel** applies the same active filters, so only the records currently selected by those filters are included in the workbook. Date processed uses the date on which **Save work** completed the record.
+
 Available exports include:
 
-- Reaction CSV
+- Accuracy-review Excel workbook for an individual saved job
 - JSON
 - Token-cost CSV
-- Export-all CSV
+- Export-all Excel workbook
 
 Saved records include extraction values, confidence scores, source evidence, lookup matches, token usage, estimated cost, AI/local extraction time, and total time from job creation until the reviewer selected **Save work**.
 
 ### 10.1 Human confidence and accuracy review workbook
 
-Use `ReactXtract_Field_Confidence_Accuracy_Template.xlsx` when conducting a formal human review of extracted fields.
+Use `ReactXtract_Per_File_Product_Accuracy_Template.xlsx` when conducting a formal human review of extracted fields.
 
 1. Open the workbook and read the **Instructions** sheet.
-2. Use one row on **Accuracy Review** for each reaction.
-3. Paste each extracted value and its AI confidence score from ReactXtract.
-4. Enter **Human Accuracy** from 0% to 100% for every reviewed field.
-5. Use 100% for a fully correct field, 0% for an incorrect field, or an intermediate percentage for a partially correct field.
-6. Leave Human Accuracy blank when the field was not reviewed or is not applicable.
-7. Record corrections or explanations under **Reviewer Comments**.
-8. Save a separate working copy named for the literature set and reviewer.
+2. Duplicate **File Review Template** once for every source PDF and rename each copied worksheet using a short form of the PDF filename.
+3. Enter the full source filename, literature set or job ID, reviewer, review date, and overall notes at the top of each file worksheet.
+4. Use one product block for every extracted product or reaction record. Replace the placeholder product name and reaction ID.
+5. For each of the 12 reaction fields, paste the extracted value and the displayed AI confidence score from ReactXtract.
+6. Enter the reviewer-verified value under **Human Correct Value** and a **Human Accuracy Score** from 0 to 100.
+7. Use 100 for a fully correct field, 75 for a minor correction, 50 for a partially correct field, 25 for a mostly incorrect field, and 0 for an incorrect, unsupported, or missing value.
+8. Leave Human Accuracy blank when the field has not been reviewed or is not applicable. Blank scores are excluded from the worksheet average.
+9. Record the source page and validation explanation under **Evidence / Reviewer Notes**.
+10. Save a separate working copy named for the literature set and reviewer.
 
-The workbook includes all 12 extraction fields, input validation, color-coded confidence and accuracy cells, and automatic averages per reaction.
+The blank template provides 20 reusable product blocks per file worksheet. A database export removes every unused placeholder block and outputs exactly one block for each extracted product. Each worksheet reports the exact number of products and reaction records assigned to that source PDF. All 12 extraction fields, score validation, color-coded confidence and human-accuracy cells, and automatic per-file averages are retained. Additional product blocks are created automatically when a PDF contains more than 20 products.
+
+For a saved job, click **Accuracy Excel** to populate the template automatically from the database. ReactXtract creates one worksheet per source PDF, assigns reactions using their saved product/source evidence, and includes the job's total processing cost, file extraction cost, token count, model, and total time until save. Human-corrected values and Human Accuracy scores remain blank for reviewers to complete. Generated exports contain only source-file worksheets; the template's **Instructions** worksheet is not included.
+
+From **Records**, click **Export filtered Excel** to place the matching saved file records into one workbook. Each source PDF receives a separate worksheet; worksheet names include the literature-set title when the export contains multiple jobs. With no active filters, all saved records are exported.
 
 ## 11. Local Files and Data
 
@@ -518,6 +526,8 @@ Do not stop the command window during an active API call. If the same one-chunk 
 
 The PDF text layer may use different typography or contain the information only in a structure or image. Check the cited page manually using **Original PDF**. Bounding-box evidence is used when available, but not every image-only value has searchable PDF text.
 
+For a newly extracted image-only product, ReactXtract prefers the stored visual bounding box over a nearby narrative quote. Extractions created before this rule was added must be processed again to receive corrected visual evidence coordinates.
+
 ## 14. POC Security and Usage Notes
 
 - ReactXtract uses Django's local development server and must not be exposed directly to the public internet.
@@ -525,7 +535,7 @@ The PDF text layer may use different typography or contain the information only 
 - Confirm that users are authorized to send selected literature content to the configured AI provider.
 - API calls may incur costs.
 - AI output must be reviewed before saving or using it for downstream decisions.
-- Local lookup lists are advisory and non-exhaustive; unlisted source-supported values remain valid.
+- Local lookup lists are advisory and non-exhaustive. Exact matches and synonyms display the approved lookup name; unlisted source-supported values remain valid.
 
 ## 15. Quick Reference
 

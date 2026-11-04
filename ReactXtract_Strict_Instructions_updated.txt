@@ -226,3 +226,49 @@ Return only the structured extraction output required by the application. Do not
 ## Page-Selection Keywords
 
 keywords: Experiments, Experimental Procedure, Reaction Schemes, Reaction Mechanism, Synthesis Procedure, Experimental Section, Synthesis, General Procedure, Experimental Methods, Methodology, Materials and Methods, Synthetic Methodology, Preparation of, Synthesis of, Representative Procedure, Representative Example, Representative Synthesis, Reagents and Conditions, Reaction Scope, Substrate Scope, Optimization, Optimized Process, Synthetic Route, General Experimental, Experimental Details, Procedure for, Characterization Data, Scheme
+
+## Additional Field Validation Rules
+
+- A percentage is a yield only when the supporting source text explicitly identifies it with the word "yield", including forms such as "yielded", "yields", or "yield%". Do not treat a bare percentage as yield because it may describe solvent concentration, composition, selectivity, conversion, purity, or another measurement.
+- When multiple explicit numeric reaction temperatures use the same unit, enter one range ordered from the lowest temperature to the highest temperature. Do not infer a numeric value for room temperature or another qualitative temperature.
+- When the application finds an exact value or synonym in an approved local lookup table, display the canonical name supplied by that lookup table. Values not found in the lookup remain valid and must be retained.
+- When a product or other field value appears only in a reaction scheme or image and is absent from searchable PDF text, use a tight bounding box around that exact structure and compound label. Do not use an unrelated nearby sentence, percentage, ratio, or repeated compound number as its textual evidence.
+
+## Additional Rule for Reaction Staging
+
+### Task: Identify the Number of Reaction Stages
+
+Analyze the provided chemical reaction text and determine the number of distinct reaction stages involved in the synthesis or chemical transformation.
+
+Follow these instructions:
+
+1. Identify all distinct chemical transformations described in the text, from the initial starting materials to the final product.
+2. Treat each sequential chemical transformation that produces an intermediate subsequently used in another chemical transformation as a separate reaction stage.
+3. Identify and distinguish reaction stages from work-up procedures, purification, extraction, crystallization, solvent exchange, and other non-reactive operations. Do not count these as reaction stages.
+4. If multiple reactants are combined in a single reaction vessel and undergo one chemical transformation to produce the target product, count this as one reaction stage.
+5. If an intermediate is isolated or generated in situ and subsequently undergoes another chemical transformation, count the subsequent transformation as an additional stage.
+6. Do not assume that a reaction involves multiple stages merely because multiple reagents, catalysts, solvents, or reaction conditions are used.
+7. If the text does not provide sufficient information to establish the number of stages, indicate "Undetermined" rather than making assumptions.
+8. Every identified reaction stage must be supported by explicit evidence in the source text. Do not infer missing intermediates or reaction stages based solely on known reaction mechanisms or expected synthetic pathways. Distinguish between the number of reaction stages and the number of experimental operations.
+
+### Required Output for Stage Assessment
+
+- Number of reaction stages
+- Stage-by-stage description
+- Starting materials
+- Intermediate(s), if any
+- Final product
+- Evidence from the reaction text supporting the stage count
+- Confidence level: High / Medium / Low
+
+The application uses a strict structured schema. Return the supported number or "Undetermined" in `reaction_stages`; use the existing starting-material and product fields, and use `field_metadata.reaction_stages` for evidence and numeric confidence. Do not add output keys that are absent from the application schema.
+
+| Situation | How the model should count |
+| --- | --- |
+| One-pot reaction with multiple reagents | 1 stage if there is one chemical transformation |
+| Sequential reactions producing intermediates | Count each distinct transformation |
+| Intermediate generated in situ | Count as a separate stage if it undergoes another transformation |
+| Multiple purification steps | Do not count |
+| Repeated addition of reagents during the same reaction | Do not automatically count as additional stages |
+| Reaction sequence involving isolated intermediates | Count each chemical transformation |
+| Text describes only the final reaction | Count only the explicitly supported stage(s) |

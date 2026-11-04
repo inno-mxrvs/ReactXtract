@@ -18,7 +18,7 @@
         <div class="actions">
             <a class="button button--ghost" href="{% url 'export_usage_csv' job.id %}">Token costs</a>
             {% if is_draft %}<form action="{% url 'discard_draft' job.id %}" method="post" data-draft-resolution>{% csrf_token %}<button class="button button--ghost" type="submit">Discard</button></form>{% endif %}
-            {% if not is_draft %}<a class="button button--secondary" href="{% url 'export_job_json' job.id %}">JSON</a><a class="button button--primary" href="{% url 'export_job_csv' job.id %}">Reaction CSV</a>{% endif %}
+            {% if not is_draft %}<a class="button button--secondary" href="{% url 'export_job_json' job.id %}">JSON</a><a class="button button--primary" href="{% url 'export_job_xlsx' job.id %}">Accuracy Excel</a>{% endif %}
         </div>
     </header>
 

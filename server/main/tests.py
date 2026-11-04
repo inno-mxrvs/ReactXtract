@@ -1,5 +1,6 @@
 import shutil
 import tempfile
+from io import BytesIO
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -7,6 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import fitz
+from openpyxl import load_workbook
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -14,6 +16,7 @@ from django.utils import timezone
 
 from .lookups import (
     match_reaction_conditions,
+    normalize_reaction_conditions,
     normalize_reagent_catalyst_values,
     normalize_solvent_values,
 )
@@ -23,6 +26,7 @@ from .services import (
     REACTION_SCHEMA,
     _format_reaction_chemical_typography,
     _reasoning_options,
+    _validate_and_normalize_reaction_fields,
     adaptive_chunk_page_numbers,
     build_native_page_context,
     chunk_page_numbers,
@@ -33,6 +37,7 @@ from .services import (
     format_chemical_subscripts,
     get_extraction_instructions,
     load_extracted_text_pages,
+    normalize_temperature_range,
     select_keyword_pages,
     select_keyword_pages_from_text,
 )
@@ -360,6 +365,54 @@ class ReactXtractViewsTests(TestCase):
         self.assertIn('dichloromethane', matched_text.lower())
         self.assertNotIn('tetrahydrofuran', matched_text.lower())
 
+    def test_compound_label_highlight_uses_role_context_not_another_number(self):
+        pdf = fitz.open(stream=make_pdf([
+            'drimane-8,11-diol was analyzed. The precursor 11 was then converted.'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'The precursor 11 was then converted.',
+                'compound 11',
+            )
+            matched_text = ' '.join(page.get_textbox(quad.rect) for quad in rectangles)
+        finally:
+            pdf.close()
+
+        self.assertIn('precursor 11', matched_text.lower())
+        self.assertNotIn('8,11-diol', matched_text.lower())
+
+    def test_image_only_product_prefers_visual_bbox_over_unrelated_quote(self):
+        pdf = fitz.open(stream=make_pdf([
+            'The reaction afforded an exo:endo ratio of 65:35.'
+        ]), filetype='pdf')
+        try:
+            page = pdf[0]
+            rectangles = _find_quote_rectangles(
+                page,
+                'afforded an exo:endo ratio of 65:35',
+                f'({chr(177)})-drimenyl acetate (9)',
+                ['0.10', '0.60', '0.40', '0.80'],
+            )
+            rectangle = fitz.Rect(rectangles[0])
+            matched_text = page.get_textbox(rectangle)
+            expected = fitz.Rect(
+                0.10 * page.rect.width,
+                0.60 * page.rect.height,
+                0.40 * page.rect.width,
+                0.80 * page.rect.height,
+            )
+        finally:
+            pdf.close()
+
+        self.assertEqual(len(rectangles), 1)
+        self.assertEqual(
+            tuple(round(value, 2) for value in rectangle),
+            tuple(round(value, 2) for value in expected),
+        )
+        self.assertNotIn('65:35', matched_text)
+
     def test_pdf_document_is_served_inline_for_native_embed(self):
         job = ExtractionJob.objects.create(title='Embedded PDF test')
         pdf_bytes = make_pdf(['Embedded source document'])
@@ -438,6 +491,138 @@ class ReactXtractViewsTests(TestCase):
         detail_response = self.client.get(reverse('job_detail', args=[job.id]))
         self.assertContains(detail_response, 'API time')
         self.assertContains(detail_response, '45.7s')
+
+    def test_excel_export_uses_one_sheet_per_file_and_product_blocks(self):
+        job = ExtractionJob.objects.create(
+            title='Multi-file paper', status=ExtractionJob.Status.COMPLETED,
+            model_name='test-model', total_tokens=300,
+            estimated_cost_usd=Decimal('0.012345'),
+            processing_duration_ms=4000, total_duration_ms=6500,
+            completed_at=timezone.now(),
+        )
+        article = SourceDocument.objects.create(
+            job=job, original_name='article.pdf',
+            file=SimpleUploadedFile('article.pdf', make_pdf(['Product A.']), content_type='application/pdf'),
+            page_count=1,
+        )
+        supporting = SourceDocument.objects.create(
+            job=job, original_name='supporting info.pdf',
+            file=SimpleUploadedFile('supporting info.pdf', make_pdf(['Product B.']), content_type='application/pdf'),
+            page_count=1,
+        )
+        Reaction.objects.create(
+            job=job, reaction_number=1, products=['Product A'], starting_materials=['Material A'],
+            confidence_scores={'products': 0.88, 'starting_materials': 0.75},
+            field_evidence={
+                'products': {'source_file': 'article.pdf', 'page': '1', 'quote': 'Product A.'},
+                'starting_materials': {'source_file': 'article.pdf', 'page': '1', 'quote': 'Material A.'},
+            },
+        )
+        Reaction.objects.create(
+            job=job, reaction_number=2, products=['Product B1', 'Product B2'],
+            confidence_scores={'products': 0.91},
+            field_evidence={
+                'products': {'source_file': 'supporting info.pdf', 'page': '3', 'quote': 'Products B1 and B2.'},
+            },
+        )
+        AITokenUsage.objects.create(
+            job=job, document=article, phase=AITokenUsage.Phase.EXTRACTION,
+            model_name='test-model', total_tokens=100,
+            estimated_cost_usd=Decimal('0.004000'),
+        )
+        AITokenUsage.objects.create(
+            job=job, document=supporting, phase=AITokenUsage.Phase.EXTRACTION,
+            model_name='test-model', total_tokens=200,
+            estimated_cost_usd=Decimal('0.008000'),
+        )
+
+        response = self.client.get(reverse('export_job_xlsx', args=[job.id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response['Content-Type'],
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        workbook = load_workbook(BytesIO(response.content), data_only=False)
+        self.assertEqual(workbook.sheetnames, ['article', 'supporting info'])
+        article_sheet = workbook['article']
+        support_sheet = workbook['supporting info']
+        self.assertEqual(article_sheet['B4'].value, 'article.pdf')
+        self.assertEqual(article_sheet['B3'].value, 1)
+        self.assertEqual(article_sheet['D3'].value, 1)
+        self.assertEqual(article_sheet['B6'].value, 0.012345)
+        self.assertEqual(article_sheet['D6'].value, 0.004)
+        self.assertEqual(article_sheet['A9'].value, 'Product A')
+        self.assertEqual(article_sheet['B9'].value, 'RX-0001')
+        self.assertEqual(article_sheet['D9'].value, 'Product A')
+        self.assertEqual(article_sheet['E9'].value, 88)
+        self.assertIsNone(article_sheet['F9'].value)
+        self.assertIsNone(article_sheet['G9'].value)
+        self.assertEqual(article_sheet['H9'].value, '1')
+        self.assertEqual(support_sheet['A9'].value, 'Product B1')
+        self.assertEqual(support_sheet['A21'].value, 'Product B2')
+        self.assertEqual(support_sheet['B21'].value, 'RX-0002')
+        self.assertEqual(support_sheet['B3'].value, 2)
+        self.assertEqual(support_sheet['D3'].value, 1)
+        self.assertEqual(article_sheet.max_row, 20)
+        self.assertEqual(support_sheet.max_row, 32)
+
+        records_response = self.client.get(reverse('records'))
+        self.assertContains(records_response, 'Export filtered Excel')
+        detail_response = self.client.get(reverse('job_detail', args=[job.id]))
+        self.assertContains(detail_response, 'Accuracy Excel')
+
+    def test_records_filters_also_limit_excel_export(self):
+        today = timezone.localdate()
+        current = ExtractionJob.objects.create(
+            title='Target paper', status=ExtractionJob.Status.COMPLETED,
+            completed_at=timezone.now(), reaction_count=1,
+        )
+        current_document = SourceDocument.objects.create(
+            job=current, original_name='target.pdf',
+            file=SimpleUploadedFile('target.pdf', make_pdf(['Target product.']), content_type='application/pdf'),
+            page_count=1,
+        )
+        Reaction.objects.create(
+            job=current, reaction_number=1, products=['Target product'],
+            field_evidence={'products': {'source_file': 'target.pdf', 'page': '1'}},
+        )
+        other = ExtractionJob.objects.create(
+            title='Other paper', status=ExtractionJob.Status.COMPLETED,
+            completed_at=timezone.now(), reaction_count=1,
+        )
+        SourceDocument.objects.create(
+            job=other, original_name='other.pdf',
+            file=SimpleUploadedFile('other.pdf', make_pdf(['Other product.']), content_type='application/pdf'),
+            page_count=1,
+        )
+        old = ExtractionJob.objects.create(
+            title='Target paper old', status=ExtractionJob.Status.COMPLETED,
+            completed_at=timezone.now() - timedelta(days=1), reaction_count=1,
+        )
+        SourceDocument.objects.create(
+            job=old, original_name='target-old.pdf',
+            file=SimpleUploadedFile('target-old.pdf', make_pdf(['Old product.']), content_type='application/pdf'),
+            page_count=1,
+        )
+        parameters = {
+            'q': 'Target paper',
+            'status': ExtractionJob.Status.COMPLETED,
+            'processed_date': today.isoformat(),
+        }
+
+        records_response = self.client.get(reverse('records'), parameters)
+
+        self.assertContains(records_response, str(current.id))
+        self.assertNotContains(records_response, str(other.id))
+        self.assertNotContains(records_response, str(old.id))
+        expected_query = 'q=Target+paper&amp;status=completed&amp;processed_date=' + today.isoformat()
+        self.assertContains(records_response, expected_query)
+
+        export_response = self.client.get(reverse('export_all_xlsx'), parameters)
+        workbook = load_workbook(BytesIO(export_response.content), data_only=False)
+        self.assertEqual(workbook.sheetnames, ['target'])
+        self.assertEqual(workbook['target']['B4'].value, current_document.original_name)
 
 
 class ChunkingTests(TestCase):
@@ -553,6 +738,9 @@ class ChunkingTests(TestCase):
         self.assertIn('### 8. Reaction Temperature', instructions)
         self.assertIn('### 11. Type of Reaction Description', instructions)
         self.assertIn('### 12. Yield', instructions)
+        self.assertIn('Additional Rule for Reaction Staging', instructions)
+        self.assertIn('indicate "Undetermined"', instructions)
+        self.assertIn('explicitly identifies it with the word "yield"', instructions)
         schema_fields = REACTION_SCHEMA['properties']['reactions']['items']['properties']
         self.assertIn('reaction_temperature', schema_fields)
         self.assertIn('reaction_description_type', schema_fields)
@@ -603,15 +791,27 @@ class OptionalLookupNormalizationTests(TestCase):
         self.assertFalse(matches[2]['matched'])
         self.assertEqual(matches[2]['value'], 'new bio-derived solvent')
 
-    def test_reaction_conditions_are_tagged_without_rewriting_full_text(self):
+    def test_reagent_alias_uses_canonical_name_from_any_approved_lookup(self):
+        values, matches = normalize_reagent_catalyst_values(['collidine'])
+
+        self.assertEqual(values, ['2,4,6-trimethylpyridine'])
+        self.assertTrue(matches[0]['matched'])
+        self.assertTrue(matches[0]['canonicalized'])
+        self.assertEqual(matches[0]['lookup_type'], 'T_SOLV')
+
+    def test_reaction_conditions_use_lookup_display_names(self):
         conditions = 'The reaction was heated under an inert atmosphere in a sealed tube.'
         matches = match_reaction_conditions(conditions)
+        normalized = normalize_reaction_conditions(conditions)
 
         self.assertEqual(
             {(item['code'], item['value']) for item in matches},
             {('38', 'Inert atmosphere'), ('45', 'Sealed tube')},
         )
-        self.assertEqual(conditions, 'The reaction was heated under an inert atmosphere in a sealed tube.')
+        self.assertEqual(
+            normalized,
+            'The reaction was heated under an Inert atmosphere in a Sealed tube.',
+        )
 
     def test_draft_exposes_advisory_lookup_metadata(self):
         item = {
@@ -635,6 +835,53 @@ class OptionalLookupNormalizationTests(TestCase):
             {item['code'] for item in prepared['lookup_metadata']['reaction_conditions']},
             {'38', '43'},
         )
+
+
+class ReactionFieldValidationTests(TestCase):
+    def test_bare_percentage_is_not_accepted_as_yield(self):
+        degree = chr(176)
+        reaction = {
+            'yield': 'Overall yield (%) 70',
+            'reaction_temperature': f'0 {degree}C; 20 {degree}C',
+            'field_metadata': {
+                'yield': {
+                    'confidence': 0.78,
+                    'source_file': 'article.pdf',
+                    'page': '4',
+                    'quote': 'DCM, 70% (as mixture of diastereoisomers).',
+                    'bbox': {'left': 0.1, 'top': 0.2, 'right': 0.3, 'bottom': 0.4},
+                },
+            },
+        }
+
+        normalized = _validate_and_normalize_reaction_fields(reaction)
+
+        self.assertEqual(normalized['yield'], '')
+        self.assertEqual(normalized['field_metadata']['yield']['confidence'], 0)
+        self.assertEqual(normalized['reaction_temperature'], f'0{chr(8211)}20 {degree}C')
+        self.assertEqual(normalized['reaction_stages'], 'Undetermined')
+
+    def test_explicit_yield_word_preserves_yield(self):
+        reaction = {
+            'yield': 'Yield (%) 70',
+            'reaction_temperature': '',
+            'field_metadata': {
+                'yield': {'confidence': 0.9, 'quote': 'The product was isolated in 70% yield.'},
+            },
+        }
+
+        normalized = _validate_and_normalize_reaction_fields(reaction)
+
+        self.assertEqual(normalized['yield'], 'Yield (%) 70')
+        self.assertEqual(normalized['field_metadata']['yield']['confidence'], 0.9)
+
+    def test_temperature_range_is_sorted_lowest_to_highest(self):
+        degree = chr(176)
+        self.assertEqual(
+            normalize_temperature_range(f'20 {degree}C; -10 {degree}C; 0 {degree}C'),
+            f'-10{chr(8211)}20 {degree}C',
+        )
+        self.assertEqual(normalize_temperature_range('room temperature'), 'room temperature')
 
 
 class NativePdfExtractionTests(TestCase):
