@@ -44,11 +44,17 @@ For automatic Windows setup, double-click `setup.cmd`. It creates `.venv`, insta
 The equivalent manual commands are:
 
 ```powershell
-py -m venv .venv
+py -3.13 -m venv .venv
 .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
+
+`setup.cmd` explicitly prefers standard 64-bit Python 3.13 and falls back to
+standard Python 3.12. It rejects free-threaded or unsupported virtual
+environments instead of allowing PyMuPDF to fall back to an incompatible source
+build. If `.venv` was created with another Python version, delete that folder
+and rerun `setup.cmd` after installing a supported runtime.
 
 Configure either the standard OpenAI variables or the Azure OpenAI variables. `AI_INPUT_MODE` accepts `hybrid` (default), `text`, or `vision`; hybrid uses native PyMuPDF text/tables plus targeted reaction-scheme crops. Adaptive chunking keeps ordinary small selections together and splits reaction-dense visual inputs according to `AI_REACTION_DENSE_CHUNK_PAGES` (default `2`). `AI_MAX_PARALLEL_REQUESTS` overlaps independent chunks (default `2`). Compatible reasoning deployments default to `AI_REASONING_EFFORT=none`; GPT-5.5 also maps a legacy `minimal` setting to `none`. API attempts time out after `AI_REQUEST_TIMEOUT_SECONDS=300` and retry at most `AI_MAX_RETRIES=1` time. Each attempt stores its status, duration, error, prompt/completion tokens, and reasoning-token count.
 

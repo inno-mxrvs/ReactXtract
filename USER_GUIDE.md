@@ -124,12 +124,19 @@ Windows may display a SmartScreen or security warning for a newly downloaded `.c
 If `setup.cmd` cannot be used, open PowerShell in the repository folder and run:
 
 ```powershell
-py -3 -m venv .venv
+py -3.13 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
+
+The automatic setup explicitly selects standard 64-bit Python 3.13, with
+standard Python 3.12 as a fallback. Free-threaded Python builds and unsupported
+existing virtual environments are rejected because compiled dependencies such
+as PyMuPDF may not provide compatible wheels. If setup reports an incompatible
+`.venv`, delete only the `.venv` folder and rerun `setup.cmd` after installing a
+supported Python runtime.
 
 If PowerShell blocks virtual-environment activation:
 
